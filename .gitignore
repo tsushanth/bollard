@@ -1,3 +1,8 @@
 target/
 **/*.rs.bk
 .DS_Store
+
+# secrets / local env — never commit
+.env
+*.env
+*.key
