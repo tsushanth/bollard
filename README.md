@@ -86,7 +86,7 @@ policy/default.yaml       taint-keyed, deny-by-default policy
 config/tools.yaml         per-tool provenance map
 deploy/                   the cage: docker-compose + images
 scripts/demo.sh           runs the full scenario
-site/index.html           landing page (self-contained, no build step)
+docs/index.html           landing page (GitHub Pages, self-contained)
 DESIGN.md                 thesis, threat model, architecture, roadmap
 ```
 
