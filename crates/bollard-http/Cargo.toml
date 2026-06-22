@@ -1,0 +1,10 @@
+[package]
+name = "bollard-http"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Minimal shared HTTP/1.1 helpers for bollard services."
+
+[dependencies]
+tokio = { version = "1", features = ["net", "io-util"] }
+serde_json = "1"

@@ -1,0 +1,108 @@
+# The cage.
+#
+# `caged` is an internal network: Docker gives it no NAT to the outside world.
+# The agent, broker, and mcp sit on it. Only bollard-proxy also joins `uplink`
+# (a normal bridge with internet), so the proxy is the agent's sole path out.
+#
+# Decision flow: bollard-mcp tags tool outputs and reports provenance to
+# bollard-broker; bollard-proxy asks bollard-broker on every egress; the broker
+# applies the taint-keyed policy. The agent reaches broker/mcp directly (NO_PROXY)
+# and the wider internet only through the proxy.
+
+x-image: &bollard-image
+  build:
+    context: ..
+    dockerfile: deploy/bollard.Dockerfile
+
+services:
+  bollard-broker:
+    <<: *bollard-image
+    command: ["bollard-broker"]
+    networks: [caged]
+    volumes:
+      - ../policy/default.yaml:/etc/bollard/policy.yaml:ro
+    environment:
+      BOLLARD_POLICY: /etc/bollard/policy.yaml
+      BOLLARD_LISTEN: 0.0.0.0:8090
+
+  bollard-mcp:
+    <<: *bollard-image
+    command: ["bollard-mcp"]
+    depends_on: [bollard-broker]
+    networks: [caged]
+    volumes:
+      - ../config/tools.yaml:/etc/bollard/tools.yaml:ro
+    environment:
+      BOLLARD_TOOLS: /etc/bollard/tools.yaml
+      BOLLARD_BROKER: http://bollard-broker:8090
+      BOLLARD_SESSION: default
+      BOLLARD_LISTEN: 0.0.0.0:8070
+
+  bollard-proxy:
+    <<: *bollard-image
+    command: ["bollard-proxy"]
+    depends_on: [bollard-broker]
+    networks: [caged, uplink]
+    environment:
+      BOLLARD_BROKER: http://bollard-broker:8090
+      BOLLARD_SESSION: default
+      BOLLARD_LISTEN: 0.0.0.0:8080
+
+  # Local inference backend: on the no-internet `caged` network, so a prompt
+  # routed here physically cannot leave. Stands in for on-prem Nemotron/RTX.
+  bollard-infer-local:
+    <<: *bollard-image
+    command: ["bollard-infer"]
+    networks: [caged]
+    environment:
+      BOLLARD_INFER_ROLE: backend
+      BOLLARD_BACKEND_NAME: local-nemotron
+      BOLLARD_LISTEN: 0.0.0.0:8060
+      # Point at a real OpenAI-compatible server to make local inference real,
+      # e.g. an Ollama on a host-local network: http://<ollama-host>:11434
+      # BOLLARD_BACKEND_UPSTREAM: http://ollama:11434
+
+  # Cloud inference backend: reachable only via `uplink`. Stands in for a
+  # third-party model API.
+  bollard-infer-cloud:
+    <<: *bollard-image
+    command: ["bollard-infer"]
+    networks: [uplink]
+    environment:
+      BOLLARD_INFER_ROLE: backend
+      BOLLARD_BACKEND_NAME: cloud-gpt
+      BOLLARD_LISTEN: 0.0.0.0:8060
+
+  # Inference gateway: the agent's model endpoint. Routes each call local-vs-cloud
+  # by the broker's sensitivity decision.
+  bollard-infer:
+    <<: *bollard-image
+    command: ["bollard-infer"]
+    depends_on: [bollard-broker, bollard-infer-local, bollard-infer-cloud]
+    networks: [caged, uplink]
+    environment:
+      BOLLARD_INFER_ROLE: gateway
+      BOLLARD_BROKER: http://bollard-broker:8090
+      BOLLARD_SESSION: default
+      BOLLARD_LOCAL_BACKEND: http://bollard-infer-local:8060
+      BOLLARD_CLOUD_BACKEND: http://bollard-infer-cloud:8060
+      BOLLARD_LISTEN: 0.0.0.0:8050
+
+  agent:
+    build:
+      context: ..
+      dockerfile: deploy/agent.Dockerfile
+    depends_on: [bollard-proxy, bollard-mcp, bollard-infer]
+    networks: [caged]
+    volumes:
+      - ../agent:/agent:ro
+    environment:
+      HTTP_PROXY: http://bollard-proxy:8080
+      HTTPS_PROXY: http://bollard-proxy:8080
+      # internal services are reached directly, not through the egress boundary
+      NO_PROXY: bollard-proxy,bollard-broker,bollard-mcp,bollard-infer
+
+networks:
+  caged:
+    internal: true
+  uplink: {}

@@ -1,0 +1,24 @@
+# Bollard policy — taint-keyed, deny-by-default egress.
+#
+# Decision order for a destination host:
+#   1. in allow_hosts        -> ALLOW always (trusted sink: inference, telemetry)
+#   2. in conditional_hosts  -> ALLOW only while the context is clean of the
+#                               trifecta; DENY once it is tainted
+#   3. otherwise             -> DENY
+#
+# The trifecta holds when the session's taint set contains BOTH an untrusted
+# label and a sensitive label — i.e. private data and untrusted content have
+# both entered the same context, the precondition for injection-driven exfil.
+
+allow_hosts:
+  - example.com        # stand-in for a trusted sink (e.g. the model endpoint)
+
+conditional_hosts:
+  - example.org        # allowed until the context touches the trifecta
+
+untrusted_labels:
+  - untrusted-web
+
+sensitive_labels:
+  - private
+  - secret

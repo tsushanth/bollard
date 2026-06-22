@@ -1,0 +1,17 @@
+[package]
+name = "bollard-mcp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Bollard tool-mediation layer: tags tool outputs with provenance."
+
+[[bin]]
+name = "bollard-mcp"
+path = "src/main.rs"
+
+[dependencies]
+bollard-http = { path = "../bollard-http" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1"

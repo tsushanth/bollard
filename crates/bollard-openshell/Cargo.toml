@@ -1,0 +1,18 @@
+[package]
+name = "bollard-openshell"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Translate Bollard policy to NVIDIA OpenShell sandbox policy, and report what OpenShell can't express."
+
+[lib]
+name = "bollard_openshell"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bollard-openshell"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"

@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bollard-http",
+    "crates/bollard-proxy",
+    "crates/bollard-broker",
+    "crates/bollard-mcp",
+    "crates/bollard-infer",
+    "crates/bollard-openshell",
+]
+# Standalone validator; needs a local OpenShell checkout, so it must not be part
+# of the main build. Built on demand by the bollard-openshell conformance test.
+exclude = ["tools/openshell-validate"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "Apache-2.0"
+
+[profile.release]
+strip = true
+lto = "thin"

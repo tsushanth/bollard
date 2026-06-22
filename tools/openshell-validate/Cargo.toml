@@ -1,0 +1,16 @@
+# Standalone validator: feeds YAML to OpenShell's real policy parser.
+# Excluded from the Bollard workspace (see the root Cargo.toml `exclude`) so the
+# main build never depends on a local OpenShell checkout. Requires OpenShell
+# cloned at ../../../nvidia-wedge/OpenShell (adjust the path dep if elsewhere).
+[package]
+name = "openshell-validate"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "openshell-validate"
+path = "src/main.rs"
+
+[dependencies]
+openshell-policy = { path = "../../../nvidia-wedge/OpenShell/crates/openshell-policy" }
