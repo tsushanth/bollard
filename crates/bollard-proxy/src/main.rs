@@ -12,11 +12,26 @@
 // Unbypassability is structural: because the cage has no other route out, even
 // a raw `curl` that ignores HTTP(S)_PROXY cannot escape. If the broker is
 // unreachable, the proxy fails closed.
+//
+// Covert-channel anomaly detection is layered on top, NOT folded into the
+// broker's taint-based decision: entropy is checked locally, synchronously,
+// before even calling the broker (cheap, no round trip, and it only needs
+// the hostname) and — ONLY if BOLLARD_ANOMALY_BLOCK is set — can deny on its
+// own. Timing/size anomalies are computed live per connection against an
+// in-process rolling per-(session,host) baseline, but are logged only, never
+// blocking: they're only knowable AFTER a connection completes (you can't
+// gate a transfer on its own final byte count), and the adversarial testing
+// in bollard-anomaly found both signals are easy to evade by budgeting a
+// covert payload inside normal traffic's existing jitter. See
+// docs/covert_channel_detection.md for the full rationale, including why the
+// entropy threshold's real-vs-encoded margin is thinner than it looks.
 
+use std::collections::HashMap;
 use std::io::Write;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
+use bollard_anomaly::{corpus, hostname_entropy, RollingWindow};
 use bollard_http as http;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -26,6 +41,10 @@ struct Config {
     session: String,
     log_path: String,
     baseline_mode: bool,
+    entropy_threshold: f64,
+    anomaly_block: bool,
+    iqr_k: f64,
+    windows: Mutex<HashMap<(String, String), RollingWindow>>,
 }
 
 /// One egress event, logged as a JSONL line. This is the substrate for
@@ -42,27 +61,9 @@ struct EgressEvent<'a> {
     response_bytes: u64,
     latency_ms: f64,
     baseline: bool,
-}
-
-/// Shannon entropy of the hostname string, in bits per character. A DNS
-/// tunneling / domain-generation-algorithm style covert channel tends to
-/// produce much higher entropy than typical human-chosen hostnames.
-fn hostname_entropy(host: &str) -> f64 {
-    if host.is_empty() {
-        return 0.0;
-    }
-    let mut counts = std::collections::HashMap::new();
-    for c in host.chars() {
-        *counts.entry(c).or_insert(0u32) += 1;
-    }
-    let len = host.chars().count() as f64;
-    counts
-        .values()
-        .map(|&c| {
-            let p = c as f64 / len;
-            -p * p.log2()
-        })
-        .sum()
+    entropy_anomaly: bool,
+    timing_anomaly: Option<bool>, // None when no rolling baseline existed yet to score against
+    size_anomaly: Option<bool>,
 }
 
 fn log_event(log_path: &str, ev: EgressEvent) {
@@ -83,6 +84,9 @@ fn log_event(log_path: &str, ev: EgressEvent) {
         "latency_ms": ev.latency_ms,
         "hostname_entropy": hostname_entropy(ev.host),
         "baseline": ev.baseline,
+        "entropy_anomaly": ev.entropy_anomaly,
+        "timing_anomaly": ev.timing_anomaly,
+        "size_anomaly": ev.size_anomaly,
     })
     .to_string();
 
@@ -96,9 +100,47 @@ fn log_event(log_path: &str, ev: EgressEvent) {
     }
 }
 
+/// Score this connection's timing/size against the live rolling baseline for
+/// (session, host), then update that baseline with this connection's values
+/// for future requests to score against. Visibility only — the caller must
+/// not use this to gate the current connection's own allow/deny, since the
+/// values being scored (this connection's own latency/bytes) are only known
+/// after it already completed.
+fn score_and_update_window(cfg: &Config, session: &str, host: &str, latency_ms: f64, total_bytes: f64, iqr_k: f64) -> (Option<bool>, Option<bool>) {
+    let mut windows = cfg.windows.lock().unwrap_or_else(|e| e.into_inner());
+    let key = (session.to_string(), host.to_string());
+    let window = windows.entry(key).or_insert_with(|| RollingWindow::new(30));
+
+    let (timing_anomaly, size_anomaly) = match window.baseline() {
+        Some(b) => {
+            let lat_iqr = b.latency_q3 - b.latency_q1;
+            let lat_hi = b.latency_q3 + iqr_k * lat_iqr;
+            let lat_lo = (b.latency_q1 - iqr_k * lat_iqr).max(0.0);
+            let timing = latency_ms > lat_hi || latency_ms < lat_lo;
+
+            let size_iqr = b.size_q3 - b.size_q1;
+            let size_hi = b.size_q3 + iqr_k * size_iqr;
+            let size_lo = (b.size_q1 - iqr_k * size_iqr).max(0.0);
+            let size = total_bytes > size_hi || total_bytes < size_lo;
+            (Some(timing), Some(size))
+        }
+        None => (None, None), // fewer than 5 samples so far -- not enough for a fence yet
+    };
+
+    window.push(latency_ms, total_bytes);
+    (timing_anomaly, size_anomaly)
+}
+
 #[tokio::main]
 async fn main() {
     let listen = std::env::var("BOLLARD_LISTEN").unwrap_or_else(|_| "0.0.0.0:8080".into());
+    let entropy_threshold = std::env::var("BOLLARD_ENTROPY_THRESHOLD")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or_else(corpus::default_threshold);
+    let anomaly_block = std::env::var("BOLLARD_ANOMALY_BLOCK")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
     let cfg = Arc::new(Config {
         broker: std::env::var("BOLLARD_BROKER")
             .unwrap_or_else(|_| "http://bollard-broker:8090".into()),
@@ -107,11 +149,18 @@ async fn main() {
         baseline_mode: std::env::var("BOLLARD_BASELINE_MODE")
             .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
             .unwrap_or(false),
+        entropy_threshold,
+        anomaly_block,
+        iqr_k: std::env::var("BOLLARD_ANOMALY_IQR_K").ok().and_then(|v| v.parse().ok()).unwrap_or(1.5),
+        windows: Mutex::new(HashMap::new()),
     });
     eprintln!(
-        "[bollard] egress boundary up on {listen}; broker={} session={}; fail-closed; log={} baseline_mode={}",
-        cfg.broker, cfg.session, cfg.log_path, cfg.baseline_mode
+        "[bollard] egress boundary up on {listen}; broker={} session={}; fail-closed; log={} baseline_mode={}; entropy_threshold={:.3} anomaly_block={}",
+        cfg.broker, cfg.session, cfg.log_path, cfg.baseline_mode, cfg.entropy_threshold, cfg.anomaly_block
     );
+    if !cfg.anomaly_block {
+        eprintln!("[bollard] anomaly_block is OFF by default: entropy is scored and logged but never denies on its own. Set BOLLARD_ANOMALY_BLOCK=1 to enable, only after reviewing docs/covert_channel_detection.md's false-positive caveats.");
+    }
 
     let listener = TcpListener::bind(&listen).await.expect("bind listen address");
     loop {
@@ -183,12 +232,26 @@ async fn handle(mut client: TcpStream, cfg: Arc<Config>) -> std::io::Result<()> 
     };
     let (host, port) = split_host_port(&authority, 80);
 
+    let entropy = hostname_entropy(&host);
+    let entropy_anomaly = entropy > cfg.entropy_threshold;
+    if entropy_anomaly && cfg.anomaly_block {
+        let reason = format!("anomaly: hostname entropy {entropy:.3} exceeds threshold {:.3}", cfg.entropy_threshold);
+        log_event(&cfg.log_path, EgressEvent {
+            session: &cfg.session, host: &host, port, kind: "http", allow: false, reason: &reason,
+            request_bytes: buf.len() as u64, response_bytes: 0,
+            latency_ms: start.elapsed().as_secs_f64() * 1000.0, baseline: cfg.baseline_mode,
+            entropy_anomaly, timing_anomaly: None, size_anomaly: None,
+        });
+        return deny(&mut client, &host, &reason).await;
+    }
+
     let (allow, reason) = decide(&cfg, &host).await;
     if !allow {
         log_event(&cfg.log_path, EgressEvent {
             session: &cfg.session, host: &host, port, kind: "http", allow: false, reason: &reason,
             request_bytes: buf.len() as u64, response_bytes: 0,
             latency_ms: start.elapsed().as_secs_f64() * 1000.0, baseline: cfg.baseline_mode,
+            entropy_anomaly, timing_anomaly: None, size_anomaly: None,
         });
         return deny(&mut client, &host, &reason).await;
     }
@@ -211,6 +274,7 @@ async fn handle(mut client: TcpStream, cfg: Arc<Config>) -> std::io::Result<()> 
             session: &cfg.session, host: &host, port, kind: "http", allow: false, reason,
             request_bytes: buf.len() as u64, response_bytes: 0,
             latency_ms: start.elapsed().as_secs_f64() * 1000.0, baseline: cfg.baseline_mode,
+            entropy_anomaly, timing_anomaly: None, size_anomaly: None,
         });
         return deny(&mut client, &host, reason).await;
     }
@@ -231,10 +295,14 @@ async fn handle(mut client: TcpStream, cfg: Arc<Config>) -> std::io::Result<()> 
     let (extra_req, resp_bytes) = tokio::io::copy_bidirectional(&mut client, &mut upstream)
         .await
         .unwrap_or((0, 0));
+    let request_bytes = sent_bytes + extra_req;
+    let latency_ms = start.elapsed().as_secs_f64() * 1000.0;
+    let (timing_anomaly, size_anomaly) = score_and_update_window(&cfg, &cfg.session, &host, latency_ms, (request_bytes + resp_bytes) as f64, cfg.iqr_k);
     log_event(&cfg.log_path, EgressEvent {
         session: &cfg.session, host: &host, port, kind: "http", allow: true, reason: &reason,
-        request_bytes: sent_bytes + extra_req, response_bytes: resp_bytes,
-        latency_ms: start.elapsed().as_secs_f64() * 1000.0, baseline: cfg.baseline_mode,
+        request_bytes, response_bytes: resp_bytes,
+        latency_ms, baseline: cfg.baseline_mode,
+        entropy_anomaly, timing_anomaly, size_anomaly,
     });
     Ok(())
 }
@@ -247,12 +315,26 @@ async fn tunnel(
     kind: &str,
     start: Instant,
 ) -> std::io::Result<()> {
+    let entropy = hostname_entropy(host);
+    let entropy_anomaly = entropy > cfg.entropy_threshold;
+    if entropy_anomaly && cfg.anomaly_block {
+        let reason = format!("anomaly: hostname entropy {entropy:.3} exceeds threshold {:.3}", cfg.entropy_threshold);
+        log_event(&cfg.log_path, EgressEvent {
+            session: &cfg.session, host, port, kind, allow: false, reason: &reason,
+            request_bytes: 0, response_bytes: 0,
+            latency_ms: start.elapsed().as_secs_f64() * 1000.0, baseline: cfg.baseline_mode,
+            entropy_anomaly, timing_anomaly: None, size_anomaly: None,
+        });
+        return deny(&mut client, host, &reason).await;
+    }
+
     let (allow, reason) = decide(&cfg, host).await;
     if !allow {
         log_event(&cfg.log_path, EgressEvent {
             session: &cfg.session, host, port, kind, allow: false, reason: &reason,
             request_bytes: 0, response_bytes: 0,
             latency_ms: start.elapsed().as_secs_f64() * 1000.0, baseline: cfg.baseline_mode,
+            entropy_anomaly, timing_anomaly: None, size_anomaly: None,
         });
         return deny(&mut client, host, &reason).await;
     }
@@ -273,10 +355,13 @@ async fn tunnel(
     let (req_bytes, resp_bytes) = tokio::io::copy_bidirectional(&mut client, &mut upstream)
         .await
         .unwrap_or((0, 0));
+    let latency_ms = start.elapsed().as_secs_f64() * 1000.0;
+    let (timing_anomaly, size_anomaly) = score_and_update_window(&cfg, &cfg.session, host, latency_ms, (req_bytes + resp_bytes) as f64, cfg.iqr_k);
     log_event(&cfg.log_path, EgressEvent {
         session: &cfg.session, host, port, kind, allow: true, reason: &reason,
         request_bytes: req_bytes, response_bytes: resp_bytes,
-        latency_ms: start.elapsed().as_secs_f64() * 1000.0, baseline: cfg.baseline_mode,
+        latency_ms, baseline: cfg.baseline_mode,
+        entropy_anomaly, timing_anomaly, size_anomaly,
     });
     Ok(())
 }
@@ -367,34 +452,70 @@ fn host_from_target(target: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::hostname_entropy;
+    use super::*;
 
-    #[test]
-    fn entropy_of_empty_string_is_zero() {
-        assert_eq!(hostname_entropy(""), 0.0);
+    fn test_config() -> Config {
+        Config {
+            broker: "unused".into(),
+            session: "s1".into(),
+            log_path: "/dev/null".into(),
+            baseline_mode: false,
+            entropy_threshold: corpus::default_threshold(),
+            anomaly_block: false,
+            iqr_k: 1.5,
+            windows: Mutex::new(HashMap::new()),
+        }
     }
 
     #[test]
-    fn entropy_of_single_repeated_char_is_zero() {
-        // no uncertainty: every character is the same
-        assert_eq!(hostname_entropy("aaaaaaaa"), 0.0);
+    fn default_entropy_threshold_is_the_calibrated_corpus_value_not_a_guess() {
+        // Regression guard: this must stay wired to corpus::default_threshold(),
+        // not silently drift back to a hand-picked constant. See
+        // docs/covert_channel_detection.md for what 3.5 vs 4.726 meant in practice.
+        let cfg = test_config();
+        assert!(cfg.entropy_threshold > 4.0, "expected the calibrated default (~4.7), got {}", cfg.entropy_threshold);
     }
 
     #[test]
-    fn typical_hostname_has_low_to_moderate_entropy() {
-        let e = hostname_entropy("example.com");
-        assert!(e > 0.0 && e < 4.0, "got {e}");
+    fn anomaly_block_defaults_to_off() {
+        // The safe default: entropy is scored and logged, never blocks on its
+        // own, until an operator explicitly opts in after reading the
+        // false-positive caveats in the docs.
+        assert!(!test_config().anomaly_block);
     }
 
     #[test]
-    fn dns_tunneling_style_subdomain_has_higher_entropy() {
-        // a plausible base32/hex-encoded exfil subdomain: high character
-        // diversity relative to length, vs. a normal hostname of similar length.
-        let normal = hostname_entropy("mail.google.com");
-        let encoded = hostname_entropy("j3f9k2la8xz1q7wm.evil.com");
-        assert!(
-            encoded > normal,
-            "expected encoded subdomain entropy ({encoded}) > normal hostname entropy ({normal})"
-        );
+    fn rolling_window_scores_nothing_until_it_has_five_samples() {
+        let cfg = test_config();
+        for i in 0..4 {
+            let (timing, size) = score_and_update_window(&cfg, "s1", "api.example.com", 100.0 + i as f64, 1000.0, cfg.iqr_k);
+            assert_eq!(timing, None, "expected no baseline yet at sample {i}");
+            assert_eq!(size, None, "expected no baseline yet at sample {i}");
+        }
+    }
+
+    #[test]
+    fn rolling_window_flags_an_outlier_after_warming_up() {
+        let cfg = test_config();
+        // 10 normal samples to build a live baseline
+        for i in 0..10 {
+            let jitter = (i as f64 * 7.0) % 40.0;
+            score_and_update_window(&cfg, "s1", "api.example.com", 100.0 + jitter, 1000.0 + jitter * 10.0, cfg.iqr_k);
+        }
+        // an obvious outlier should now be flagged
+        let (timing, size) = score_and_update_window(&cfg, "s1", "api.example.com", 5000.0, 1000.0, cfg.iqr_k);
+        assert_eq!(timing, Some(true), "expected the live rolling window to flag an obvious latency outlier");
+        let _ = size;
+    }
+
+    #[test]
+    fn rolling_window_is_per_session_and_host() {
+        let cfg = test_config();
+        for i in 0..10 {
+            score_and_update_window(&cfg, "s1", "api.example.com", 100.0 + i as f64, 1000.0, cfg.iqr_k);
+        }
+        // a different host has no baseline yet, even in the same session
+        let (timing, _) = score_and_update_window(&cfg, "s1", "other.example.com", 100.0, 1000.0, cfg.iqr_k);
+        assert_eq!(timing, None);
     }
 }

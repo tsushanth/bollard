@@ -75,18 +75,26 @@ sink). `bollard-proxy` logs one JSONL line per connection to
 entropy. Set `BOLLARD_BASELINE_MODE=1` while recording known-legitimate
 traffic to build a baseline corpus.
 
-`bollard-anomaly` (`cargo test -p bollard-anomaly`) implements three
-Tukey-fence tests over that log — timing IQR, size-distribution IQR, and a
-calibrated hostname-entropy threshold — and validates each against
-synthetic adversarial traffic rather than just asserting the math works.
-Confirmed result, not assumed: timing and size IQR both catch an obvious
-channel but miss one budgeted to fit inside normal traffic's existing
-jitter; hostname entropy is the only signal that doesn't need per-host
-history, but its real-vs-encoded margin turned out to be uncomfortably
-thin (~0.2 bits/char) against real hostnames like ad-tech/CDN domains. Not
-yet wired into the proxy's live block decision. See
-[docs/covert_channel_detection.md](docs/covert_channel_detection.md) for
-the full writeup.
+`bollard-anomaly` implements three Tukey-fence tests — timing IQR,
+size-distribution IQR, hostname entropy — validated against synthetic
+adversarial traffic (9 tests, `cargo test -p bollard-anomaly`) rather than
+asserted. Calibrating the entropy threshold against a ~140-hostname real-world
+corpus (`crates/bollard-anomaly/src/corpus.rs`) — not the ~9-hostname
+spot-check this doc originally shipped with — moved the honest threshold
+from a guessed 3.5-3.9 to **4.726**, and that changed the finding: at a
+threshold wide enough to avoid false positives on real hash-heavy CDN/cloud
+hostnames, only encoded payloads near the 63-character DNS-label maximum
+reliably get caught. Shorter, more realistic encoded subdomains evade it
+entirely. Entropy is wired into `bollard-proxy`'s live decision path —
+computed before the broker is even called — but **denies only if
+`BOLLARD_ANOMALY_BLOCK=1` is explicitly set**; off by default, given how
+weak the confirmed catch rate turned out to be. Timing/size are wired live
+via an in-process rolling per-(session,host) window and logged, but never
+gate a decision — they're only knowable after a connection completes, and
+Weekend 2 already showed both are easy to evade by budgeting inside normal
+jitter. See [docs/covert_channel_detection.md](docs/covert_channel_detection.md)
+for the full writeup, including what's still not addressed at all
+(content-level channels).
 
 ### Real inference
 
