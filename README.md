@@ -56,6 +56,7 @@ Edit [`policy/default.yaml`](policy/default.yaml) and
 | Layer | How |
 | --- | --- |
 | Policy / routing / DLP decision logic | `cargo test` — unit tests in `bollard-broker` and `bollard-openshell` |
+| Taint persists across intervening decisions (no fixed-window bypass) | `cargo test -p bollard-broker taint_does_not_decay` — added after confirming this class of bug, which broke an unrelated Kaggle AI-security benchmark's own exfiltration detector, doesn't apply here: taint is session-lifetime, not an event-count window |
 | Covert-channel anomaly tests (timing/size IQR, hostname entropy), adversarially validated | `cargo test -p bollard-anomaly` |
 | Hostname-entropy heuristic (unit-level) | `cargo test -p bollard-proxy` |
 | Full agent attack scenario | `./scripts/demo.sh` — a real MCP-client agent against the live cage |

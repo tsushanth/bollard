@@ -322,6 +322,31 @@ mod tests {
         assert_eq!(p.route(&taint(&["secret", "untrusted-web"])).0, "local");
     }
 
+    /// Regression guard against a real bypass class, not a hypothetical one:
+    /// an external AI-security benchmark's own exfiltration detector used a
+    /// fixed lookback window (`events[i-2:i]`) to link an untrusted-input
+    /// read to a later exfil action -- so inserting one intermediate no-op
+    /// tool call between the read and the exfil reliably evaded it. Bollard's
+    /// taint is a session-lifetime accumulated set, not an event-count
+    /// window, so there is nothing here for that bypass to slip outside of:
+    /// any number of intervening decisions (tainted or not) must not clear
+    /// or weaken a prior taint.
+    #[test]
+    fn taint_does_not_decay_across_intervening_decisions() {
+        let p = policy();
+        let t = taint(&["secret", "untrusted-web"]);
+        // simulate 50 interleaved benign decisions against a trusted host --
+        // an attacker inserting arbitrarily many intermediate tool calls
+        // between the tainting read and the exfil attempt.
+        for _ in 0..50 {
+            let _ = p.decide(&t, "example.com");
+        }
+        // the sink decision for the ACTUAL exfil attempt is unaffected by
+        // how many decisions came before it -- there is no window to exit.
+        assert!(!p.decide(&t, "exfil.example").0);
+        assert!(!p.decide(&t, "example.org").0); // conditional sink also still denied
+    }
+
     #[test]
     fn dlp_matches_registered_secret_substring() {
         let secrets = taint(&["sk-live-9f83a1c2"]);
