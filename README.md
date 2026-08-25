@@ -56,12 +56,37 @@ Edit [`policy/default.yaml`](policy/default.yaml) and
 | Layer | How |
 | --- | --- |
 | Policy / routing / DLP decision logic | `cargo test` — unit tests in `bollard-broker` and `bollard-openshell` |
+| Covert-channel anomaly tests (timing/size IQR, hostname entropy), adversarially validated | `cargo test -p bollard-anomaly` |
+| Hostname-entropy heuristic (unit-level) | `cargo test -p bollard-proxy` |
 | Full agent attack scenario | `./scripts/demo.sh` — a real MCP-client agent against the live cage |
 | OpenShell policy translation | `cargo test -p bollard-openshell`; `bollard-openshell policy/default.yaml` |
 | Translated YAML accepted by OpenShell's **real** parser | build `tools/openshell-validate` (path-deps `openshell-policy`), then `BOLLARD_OPENSHELL_VALIDATOR=tools/openshell-validate/target/debug/openshell-validate cargo test -p bollard-openshell --test conformance`. Needs a local OpenShell checkout; skipped otherwise |
 | Live OpenShell integration | requires a Linux host with the OpenShell toolchain (Docker/podman/VM driver); load the translated policy into a real sandbox and replay the scenario — not runnable on macOS without that toolchain |
 
 See [docs/openshell.md](docs/openshell.md) for the OpenShell integration design.
+
+### Covert-channel detection (in progress)
+
+Provenance-gated egress blocks what policy can label; it says nothing about
+a channel that never trips a label rule (data smuggled via request timing,
+byte-size padding, or DNS-tunneling-style hostnames to an already-allowed
+sink). `bollard-proxy` logs one JSONL line per connection to
+`BOLLARD_LOG_PATH` with request/response byte counts, latency, and hostname
+entropy. Set `BOLLARD_BASELINE_MODE=1` while recording known-legitimate
+traffic to build a baseline corpus.
+
+`bollard-anomaly` (`cargo test -p bollard-anomaly`) implements three
+Tukey-fence tests over that log — timing IQR, size-distribution IQR, and a
+calibrated hostname-entropy threshold — and validates each against
+synthetic adversarial traffic rather than just asserting the math works.
+Confirmed result, not assumed: timing and size IQR both catch an obvious
+channel but miss one budgeted to fit inside normal traffic's existing
+jitter; hostname entropy is the only signal that doesn't need per-host
+history, but its real-vs-encoded margin turned out to be uncomfortably
+thin (~0.2 bits/char) against real hostnames like ad-tech/CDN domains. Not
+yet wired into the proxy's live block decision. See
+[docs/covert_channel_detection.md](docs/covert_channel_detection.md) for
+the full writeup.
 
 ### Real inference
 
