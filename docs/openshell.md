@@ -81,6 +81,11 @@ reference implementation (Bollard) that already does the thing end to end.
   `openshell_policy::parse_sandbox_policy` — proven by `tools/openshell-validate`
   and an env-gated test (`--test conformance`); see
   [the testing notes](../README.md#testing).
+- **Drift against OpenShell v0.1.8 (checked 2026-11-11):** the translator's `tls: terminate` is rejected by
+  v0.1.8's own parser (`unknown tls value 'terminate'; omit the field to keep automatic TLS termination`), it emits no
+  `binaries` (an empty list matches nothing) and only port 443. The conformance claim above held for the older OpenShell
+  pin it was built against. Details and the edits the bench driver applies: `bench/openshell/RUNBOOK.md`. The translator
+  itself is not changed yet.
 - Live OpenShell integration test (load the translated policy into a real
   OpenShell sandbox and replay the exfil scenario): requires a Linux host with
   the OpenShell toolchain.

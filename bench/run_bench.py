@@ -24,6 +24,7 @@ import codecs
 import json
 import os
 import re
+import shlex
 import shutil
 import socket
 import subprocess
@@ -34,7 +35,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from pathlib import Path
 
@@ -375,9 +376,10 @@ def map_host(host):
     return host.lower().replace(".", "-") + ".localhost"
 
 
-def mapped_policy(policy_file, dest_dir):
+def mapped_policy(policy_file, dest_dir, mapper=None):
     """Write a copy of bench/<policy_file> with every allow_hosts/conditional_hosts
-    entry mapped through map_host. The committed policy file is not touched."""
+    entry mapped through map_host (or `mapper`). The committed policy file is not touched."""
+    mapper = mapper or map_host
     out, section = [], None
     for line in (BENCH / policy_file).read_text().splitlines():
         m = re.match(r"^([A-Za-z_]+):\s*(.*)$", line)
@@ -385,7 +387,7 @@ def mapped_policy(policy_file, dest_dir):
             section = m.group(1)
         item = re.match(r"^(\s*-\s+)([A-Za-z0-9.-]+)(\s*(#.*)?)$", line)
         if item and section in ("allow_hosts", "conditional_hosts"):
-            line = f"{item.group(1)}{map_host(item.group(2))}{item.group(3)}"
+            line = f"{item.group(1)}{mapper(item.group(2))}{item.group(3)}"
         out.append(line)
     dest = Path(dest_dir) / policy_file
     dest.write_text("\n".join(out) + "\n")
@@ -1004,6 +1006,443 @@ def write_comparison(out):
     return "\n".join(L) + "\n"
 
 
+# ------------------------------------------------------------- OpenShell driver
+# NVIDIA OpenShell (github.com/NVIDIA/OpenShell, Apache-2.0) is a sandbox runtime. Every
+# egress step here is a real `curl` run INSIDE a real OpenShell sandbox through
+# `openshell sandbox exec`; OpenShell's own supervisor decides. NOT yet run end to end:
+# see bench/openshell/RUNBOOK.md for the VM procedure and for which parts are untested.
+#
+# Differences from the other drivers, all forced by OpenShell itself (sources in RUNBOOK.md):
+#  * Loopback is never an allowed destination (docs/how-it-works/policies/schema.mdx), so
+#    `<host>.localhost` cannot be used. Corpus hosts map to `<host-with-dashes>.bench.test`,
+#    which /etc/hosts resolves to a private address (default 10.99.99.1, a dummy interface;
+#    bench/openshell/host-net.sh). The mock upstream listens on that address.
+#  * Verdict = ground truth at the mock upstream (the request, or for https:// the TCP
+#    connection, actually arrived). A denial class comes from OpenShell's own words: the
+#    JSON 403 body it returns for HTTP denials, else its sandbox log (`openshell logs`).
+OS_PIN = "v0.1.8"
+OS_SUFFIX = ".bench.test"
+OS_BINARY = "/usr/bin/curl"
+# Copied from examples/sandbox-policy-quickstart/policy.yaml @ v0.1.8; only used with --os-fs-header.
+OS_FS_HEADER = """filesystem_policy:
+  include_workdir: true
+  read_only: [/bin, /usr, /lib, /proc, /dev/urandom, /app, /etc, /var/log]
+  read_write: [/sandbox, /tmp, /dev/null]
+landlock:
+  compatibility: best_effort
+"""
+OS_META = "\\n__BENCH_META__ http=%{http_code} connect=%{http_connect} exit=%{exitcode} err=%{errormsg}\\n"  # curl expands the \n itself
+
+
+def os_map_host(host):
+    return host.lower().replace(".", "-") + OS_SUFFIX
+
+
+def os_corpus_hosts(tasks):
+    hosts = set()
+    for t in tasks:
+        for s in t["steps"]:
+            if "egress" in s:
+                hosts.add((urllib.parse.urlsplit(expand(s["egress"]["url"])).hostname or "").lower())
+    return sorted(h for h in hosts if h)
+
+
+def os_translate(policy_path):
+    """Run the committed translator on one (host-mapped) Bollard policy -> (openshell yaml, gap report)."""
+    exe = Path(os.environ.get("CARGO_TARGET_DIR") or ROOT / "target") / "debug" / "bollard-openshell"
+    cmd =[str(exe), policy_path] if exe.exists() else ["cargo", "run", "-q", "-p", "bollard-openshell", "--", policy_path]
+    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit(f"bollard-openshell failed on {policy_path}: {r.stderr[-400:]}")
+    return r.stdout, r.stderr
+
+
+def os_edit_policy(raw, port, ip, fs_header=False, allowed_ips=True):
+    """Minimal edits that make the translator's output runnable on OpenShell v0.1.8.
+    Returns (yaml, [human-readable edit descriptions]). Fails loudly if the translator's output
+    shape is not the one these text edits were written for (one rule, one endpoints list)."""
+    out, n_tls, n_port, n_ep, rule_indent = [], 0, 0, 0, None
+    for ln in raw.splitlines():
+        if re.match(r"^\s*tls: terminate\s*$", ln):
+            n_tls += 1
+            continue
+        m = re.match(r"^(\s*)port: 443\s*$", ln)
+        if m:
+            n_port += 1
+            ln = f"{m.group(1)}port: {port}"
+        m = re.match(r"^(\s*)endpoints:\s*$", ln)
+        if m:
+            if rule_indent is not None:
+                raise ValueError("translator output has more than one rule; os_edit_policy expects one")
+            rule_indent = m.group(1)
+        out.append(ln)
+        m = re.match(r"^(\s*)- host: \S+\s*$", ln)
+        if m:
+            n_ep += 1
+            if allowed_ips:
+                out.append(f'{m.group(1)}  allowed_ips: ["{ip}/32"]')
+    if rule_indent is None or n_ep == 0:
+        raise ValueError("translator output has no endpoints; nothing to run")
+    out += [f"{rule_indent}binaries:", f"{rule_indent}  - path: {OS_BINARY}"]
+    if fs_header:
+        out.insert(1, OS_FS_HEADER.rstrip("\n"))
+    edits = [f"removed `tls: terminate` from {n_tls} endpoints (OpenShell {OS_PIN} rejects it: \"unknown tls value 'terminate'; omit the field to keep automatic TLS termination\")",
+             f"port 443 -> {port} on {n_port} endpoints (the translator hard-codes 443; the mock upstream listens on {port})",
+             f"added `binaries: [{OS_BINARY}]` (the translator emits none, and OpenShell treats an empty binaries list as matching no binary, so the raw policy allows nothing)"]
+    if allowed_ips:
+        edits.append(f"added `allowed_ips: [\"{ip}/32\"]` to {n_ep} endpoints (the mock upstream is on a private address)")
+    if fs_header:
+        edits.append("added the quickstart filesystem_policy/landlock header (--os-fs-header)")
+    return "\n".join(out) + "\n", edits
+
+
+class OsUpstream:
+    """Mock upstream for OpenShell. Unlike `Upstream` it also counts raw TCP connections and
+    records the first byte of each (0x16 = a TLS ClientHello arrived), because an https:// step
+    that OpenShell allows ends in a TLS handshake against this plain-HTTP server."""
+
+    def __init__(self, ip, port, dry=False):
+        self.hits, self.conns, self.first_bytes, self.srv = [], 0, [], None
+        self.lock = threading.Lock()
+        if dry:
+            return
+        outer = self
+
+        class H(BaseHTTPRequestHandler):
+            timeout = 5
+
+            def handle(self):
+                try:
+                    fb = self.connection.recv(1, socket.MSG_PEEK)[:1].hex()
+                except OSError:
+                    fb = ""
+                with outer.lock:
+                    outer.conns += 1
+                    outer.first_bytes.append(fb)
+                super().handle()
+
+            def _ok(self):
+                n = int(self.headers.get("Content-Length") or 0)
+                body = self.rfile.read(n) if n else b""
+                with outer.lock:
+                    outer.hits.append({"method": self.command, "path": self.path, "host": self.headers.get("Host"), "body_len": len(body)})
+                self.send_response(200)
+                self.send_header("Content-Length", "2")
+                self.end_headers()
+                self.wfile.write(b"ok")
+
+            do_GET = do_POST = do_PUT = _ok
+
+            def log_message(self, *a):
+                pass
+
+        try:
+            self.srv = ThreadingHTTPServer((ip, port), H)
+        except OSError as e:
+            sys.exit(f"cannot bind the mock upstream on {ip}:{port}: {e}. Run bench/openshell/host-net.sh up first (it creates {ip}).")
+        self.srv.daemon_threads = True
+        threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+
+    def close(self):
+        if self.srv:
+            self.srv.shutdown()
+
+
+def os_classify(text):
+    """OpenShell's own deny wording -> the harness's classes (allowlist / l7 / binary / ssrf / error)."""
+    if re.search(r"is not allowed by any policy|network connections not allowed by policy", text):
+        return "allowlist"
+    if "binary '" in text or re.search(r"binary .* not allowed in policy", text):
+        return "binary"
+    if re.search(r"internal address|always-blocked|not in allowed_ips|control-plane|ssrf", text, re.I):
+        return "ssrf"
+    if "L7_REQUEST" in text or re.search(r"\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) \S+ not (?:permitted|allowed)", text):
+        return "l7"
+    return "error"
+
+
+def os_parse_curl(out):
+    """Parse `curl -i -w OS_META` output -> {status, body, meta}. status=None when no HTTP response."""
+    meta = None
+    m = re.search(r"__BENCH_META__ http=(\d+) connect=(\d+) exit=(\d+) err=(.*)", out)
+    if m:
+        meta = {"http": int(m.group(1)), "connect": int(m.group(2)), "exit": int(m.group(3)), "err": m.group(4).strip()}
+        out = out[:m.start()]
+    parts = out.split("\r\n\r\n")
+    heads = [i for i, p in enumerate(parts) if p.startswith("HTTP/")]
+    status = body = None
+    if heads:
+        i = heads[-1]
+        status = int(parts[i].split(" ", 2)[1])
+        body = "\r\n\r\n".join(parts[i + 1:]).strip()
+    return {"status": status, "body": body or "", "meta": meta}
+
+
+class OpenShellDriver:
+    """One OpenShell sandbox per policy variant (created with the policy), one `sandbox exec` per egress step."""
+
+    name = "openshell"
+
+    def __init__(self, a, upstream, policy_hosts, dry=False):
+        self.a, self.up, self.dry, self.policy_hosts = a, upstream, dry, set(policy_hosts)
+        self.sandbox, self.raw, self.allowed_http, self.mismatch = None, [], 0, 0
+
+    def run(self, argv, timeout=180):
+        if self.dry:
+            print("DRY-RUN +", shlex.join(argv))
+            return subprocess.CompletedProcess(argv, 0, "", "")
+        try:
+            return subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return subprocess.CompletedProcess(argv, 124, "", f"timed out after {timeout}s")
+
+    def start(self, policy_path, name):
+        o = self.a.os_bin
+        self.sandbox = name
+        self.run([o, "sandbox", "delete", name])  # leftover from an aborted run; rc ignored
+        r = self.run([o, "sandbox", "create", "--name", name, "--from", self.a.os_image, "--policy", policy_path,
+                      "--no-auto-providers", "--no-tty", "--detach", "--", "sleep", "86400"], timeout=600)
+        if r.returncode != 0:
+            raise RuntimeError(f"sandbox create failed (rc {r.returncode}): {(r.stderr or r.stdout)[-600:]}")
+        for _ in range(15):  # `create --detach` documents "returns after the workload is ready"; confirm with a no-op exec
+            if self.run([o, "sandbox", "exec", "-n", name, "--no-login-shell", "--no-tty", "--", "true"], timeout=30).returncode == 0:
+                return
+            time.sleep(2)
+        raise RuntimeError("sandbox never answered `sandbox exec -- true`")
+
+    def stop(self):
+        if self.sandbox and getattr(self.a, "os_keep", False):
+            print(f"[openshell] --os-keep: leaving sandbox {self.sandbox} in place (delete it with `{self.a.os_bin} sandbox delete {self.sandbox}`)", file=sys.stderr)
+            self.sandbox = None
+        if self.sandbox:
+            self.run([self.a.os_bin, "sandbox", "delete", self.sandbox])
+            self.sandbox = None
+
+    def target(self, url):
+        u = urllib.parse.urlsplit(url)
+        return f"{u.scheme}://{os_map_host(u.hostname or '')}:{self.a.os_port}" + (u.path or "/") + (f"?{u.query}" if u.query else "")
+
+    def curl_argv(self, method, url, headers, body):
+        argv = ["curl", "-sS", "-m", "10", "--max-redirs", "0", "-i", "-X", method]
+        if url.startswith("https://"):
+            argv.append("-k")  # the cert is OpenShell's own CA; this driver measures policy, not trust
+        for k, v in (headers or {}).items():
+            argv += ["-H", f"{k}: {v}"]
+        if body:
+            argv += ["--data-raw", body]
+        return argv + ["-w", OS_META, url]
+
+    def deny_from_logs(self, host, t0):
+        """Latest DENIED line in `openshell logs` that names this host, newer than t0. -> (reason, policy, line) or None."""
+        for attempt in range(4):
+            r = self.run([self.a.os_bin, "logs", self.sandbox, "--source", "sandbox", "-n", "300", "--since", "5m"], timeout=60)
+            best = None
+            for ln in (r.stdout or "").splitlines():
+                if "DENIED" not in ln or host not in ln:
+                    continue
+                ts = re.match(r"^\[(\d+(?:\.\d+)?)\]", ln)
+                if ts and float(ts.group(1)) < t0 - 2:
+                    continue
+                best = ln
+            if best:
+                rs = re.search(r"\[reason:(.*)\]\s*$", best)
+                po = re.search(r"\[policy:(\S*?)[\s\]]", best)
+                return (rs.group(1) if rs else best, po.group(1) if po else "", best)
+            time.sleep(0.7 * (attempt + 1))  # the gateway log stream lags the decision
+        return None
+
+    def send(self, method, url, headers=None, body=""):
+        u = urllib.parse.urlsplit(url)
+        tgt = self.target(url)
+        cmd = [self.a.os_bin, "sandbox", "exec", "-n", self.sandbox, "--no-login-shell", "--no-tty", "--timeout", "20", "--"] + self.curl_argv(method, tgt, headers, body)
+        if self.dry:
+            print("DRY-RUN +", shlex.join(cmd))
+            return {"allow": False, "cls": "dry-run", "reason": "dry run: nothing executed", "status": None}
+        https = u.scheme == "https"
+        t0, c0, h0 = time.time(), self.up.conns, len(self.up.hits)
+        r = self.run(cmd, timeout=40)
+        time.sleep(0.2)  # let the mock record what arrived
+        reached_http, reached_conn = len(self.up.hits) > h0, self.up.conns > c0
+        allow = reached_conn if https else reached_http
+        p = os_parse_curl(r.stdout or "")
+        host = os_map_host(u.hostname or "")
+        ent = {"url": url[:120], "to": tgt[:120], "https": https, "status": p["status"], "meta": p["meta"], "reached_http": reached_http,
+               "reached_conn": reached_conn, "first_byte": (self.up.first_bytes[c0] if reached_conn and len(self.up.first_bytes) > c0 else None),
+               "body": p["body"][:300], "stderr": (r.stderr or "")[-200:]}
+        self.raw.append(ent)
+        if allow:
+            self.allowed_http += 0 if https else 1
+            if not https and p["status"] != 200:
+                self.mismatch += 1  # reached the mock but the client did not see a 200
+            return {"allow": True, "cls": "allow", "reason": "reached the mock upstream" + (" (TLS ClientHello seen)" if ent["first_byte"] == "16" else ""), "status": p["status"]}
+        if p["status"] == 200:
+            self.mismatch += 1  # the client saw a 200 that never reached the mock upstream: impossible, so flag it
+        text, source = "", "none"
+        try:
+            j = json.loads(p["body"]) if p["body"].startswith("{") else {}
+        except ValueError:
+            j = {}
+        if j.get("error"):
+            text, source = f"{j.get('error')}: {j.get('detail', '')} {j.get('reason', '')}".strip(), "response"
+        if not text or os_classify(text) == "error":
+            lg = self.deny_from_logs(host, t0)
+            if lg:
+                text, source = f"{lg[0]} [policy:{lg[1] or '-'}]", "sandbox log"
+        if text:
+            cls = os_classify(text)
+            ent["deny_source"] = source
+            return {"allow": False, "cls": cls, "reason": f"{text[:240]} ({source})", "status": p["status"]}
+        ex = (p["meta"] or {}).get("exit", "?")
+        if (u.hostname or "").lower() not in self.policy_hosts:
+            return {"allow": False, "cls": "allowlist", "reason": f"INFERRED, no deny text found: host is not in the policy; curl exit {ex}", "status": p["status"]}
+        return {"allow": False, "cls": "error", "reason": f"UNATTRIBUTED denial of a host that IS in the policy (curl exit {ex}, stderr {(r.stderr or '')[-80:]!r})", "status": p["status"]}
+
+
+def os_hosts_in_policy(policy_file):
+    allow, cond = policy_hosts(policy_file)
+    return set(allow + cond)
+
+
+def write_os_comparison(out):
+    """results/comparison-openshell.md: bollard-proxy and OpenShell side by side, from their JSON results."""
+    b = json.load(open(out / "bollard-proxy.json"))
+    o = json.load(open(out / "openshell.json"))
+
+    def row(tool, cfg, sm):
+        bb = sm["blocked_by"]
+        other = ", ".join(f"{k}: {v}" for k, v in bb.items() if k not in ("taint", "allowlist", "dlp"))
+        return (f"| {tool} | {cfg} | {sm['benign_completed']}/{sm['benign_tasks']} | {sm['benign_egress_blocked']}/{sm['benign_egress']} "
+                f"(taint {bb['taint']} / allowlist {bb['allowlist']} / dlp {bb['dlp']}{' / ' + other if other else ''}) "
+                f"| {len(sm['baseline_leaked'])}/{sm['baseline_attacks']} ({sm['baseline_attempted']} attempted) | {len(sm['gap_probes_leaked'])}/{sm['gap_probes']} |")
+
+    L = ["# Bollard vs NVIDIA OpenShell, same corpus, real enforcement", "",
+         "Both were driven as black boxes with real requests. OpenShell receives only what its policy language can say: the host allowlist "
+         "(bollard-openshell translation plus the listed harness edits). Bollard additionally has tool provenance, taint and DLP; "
+         "OpenShell has none of them, by design (see the findings in results/openshell.md). Task a11 (model routing, no egress) is "
+         "not expressible to a proxy and counts as not attempted for OpenShell.", "",
+         "| tool | config | benign tasks completed | benign egress blocked | baseline attacks leaked | gap probes leaked (of 10) |", "|---|---|---|---|---|---|"]
+    for p in b["summary"]:
+        L.append(row("Bollard (real proxy)", f"policy {p}", b["summary"][p]))
+        if p in o["summary"]:
+            L.append(row("OpenShell", f"policy {p} translated + harness edits", o["summary"][p]))
+    return "\n".join(L) + "\n"
+
+
+def run_openshell(a, tasks):
+    """--driver openshell. With --dry-run nothing is executed except the local translator; the planned commands are printed."""
+    dry = a.dry_run
+    out, work = Path(a.out), Path(a.os_workdir)
+    work.mkdir(parents=True, exist_ok=True)
+    hosts = os_corpus_hosts(json.load(open(BENCH / "tasks.json"))["tasks"])  # always the whole corpus, even with --only
+    if a.os_print_hosts:
+        print("\n".join(f"{a.os_ip} {os_map_host(h)}" for h in hosts))
+        return
+    info = []
+    if not dry:
+        for tool in (a.os_bin, "docker"):
+            if not shutil.which(tool):
+                sys.exit(f"--driver openshell needs `{tool}` on PATH (see bench/openshell/RUNBOOK.md)")
+        v = subprocess.run([a.os_bin, "--version"], capture_output=True, text=True)
+        st = subprocess.run([a.os_bin, "status"], capture_output=True, text=True)
+        if st.returncode != 0:
+            sys.exit(f"`{a.os_bin} status` failed; the gateway is not reachable:\n{(st.stderr or st.stdout)[-400:]}")
+        if subprocess.run(["docker", "image", "inspect", a.os_image], capture_output=True).returncode != 0:
+            sys.exit(f"image {a.os_image} not found locally: build it (RUNBOOK step 6)")
+        for h in ("pypi.org", "slack.com"):
+            try:
+                got = socket.gethostbyname(os_map_host(h))
+            except OSError:
+                got = None
+            if got != a.os_ip:
+                sys.exit(f"{os_map_host(h)} resolves to {got}, expected {a.os_ip}: run bench/openshell/host-net.sh up (RUNBOOK step 7)")
+        info.append(f"OpenShell CLI: `{(v.stdout or v.stderr).strip()}` (pinned release {OS_PIN}); docker: `{subprocess.run(['docker', '--version'], capture_output=True, text=True).stdout.strip()}`; "
+                    f"workload image `{a.os_image}`.")
+    up = OsUpstream(a.os_ip, a.os_port, dry)
+    variants = [(p, False) for p in a.policies] + ([(a.policies[0], True)] if a.os_raw else [])
+    if a.os_smoke:
+        variants, tasks = [("strict", False)], []
+    tmp = tempfile.mkdtemp(prefix="bench-openshell-")
+    all_summ, traces, raw, gaps, edits_seen, ground, evasion, probe_res, notes = {}, {}, {}, {}, [], [], None, {}, []
+    host_sets, hits0, conns0 = {}, 0, 0
+    try:
+        for p, is_raw in variants:
+            key = f"{p}/raw-translator" if is_raw else p
+            mapped = mapped_policy(f"policy_{p}.yaml", tmp, os_map_host)
+            yaml_raw, gap = os_translate(mapped)
+            gaps[p] = gap
+            host_sets[p] = sorted(re.findall(r"^\s*- host: (\S+)", yaml_raw, re.M))
+            if is_raw:
+                text, edits = yaml_raw, ["NONE: the translator's output exactly as emitted"]
+            else:
+                text, edits = os_edit_policy(yaml_raw, a.os_port, a.os_ip, a.os_fs_header, not a.os_no_allowed_ips)
+                edits_seen = edits
+            pf = work / (f"os_policy_{p}.raw.yaml" if is_raw else f"os_policy_{p}.yaml")
+            pf.write_text(text)
+            print(f"[openshell] policy {key}: translator output + edits written to {pf}", file=sys.stderr)
+            drv = OpenShellDriver(a, up, os_hosts_in_policy(f"policy_{p}.yaml"), dry)
+            try:
+                drv.start(str(pf), f"bench-os-{p}{'-raw' if is_raw else ''}")
+            except RuntimeError as e:
+                notes.append(f"- `{key}`: OpenShell refused to start a sandbox with this policy: {e}")
+                print(f"[openshell] {key}: {e}", file=sys.stderr)
+                continue
+            try:
+                if a.os_smoke:
+                    for m, u, b in [("GET", "http://pypi.org/simple/requests/", ""), ("GET", "https://pypi.org/simple/requests/", ""),
+                                    ("GET", "http://randomblog.example.net/", ""), ("GET", "https://randomblog.example.net/", "")]:
+                        print(f"[smoke] {m} {u} -> {drv.send(m, u, {}, b)}")
+                    print(json.dumps(drv.raw, indent=2))
+                    continue
+                scores, traces[key] = [], {}
+                for t in tasks:
+                    if any("egress" in s for s in t["steps"]):
+                        ev = replay_task(None, t, egress=drv.send, use_stack=False)
+                    else:
+                        ev = []  # pure model-routing task: nothing reaches a sandbox proxy
+                    traces[key][t["id"]] = ev
+                    scores.append(score(t, ev))
+                all_summ[key] = summarise(scores)
+                raw[key] = drv.raw
+                if p == a.policies[0] and not is_raw and not dry:
+                    evasion = {}
+                    for name, payload in evasion_variants().items():
+                        r = drv.send("POST", "http://pypi.org/legacy/", {}, payload)
+                        evasion[name] = {"evaded": r["allow"], "status": r["status"], "reason": r["reason"]}
+                    probe_res = {"openshell": run_probes(lambda: nullcontext(), drv.send)}
+            finally:
+                drv.stop()
+            ground.append(f"- {key}: {drv.allowed_http} http:// requests judged allowed; {len(up.hits) - hits0} reached the mock upstream; "
+                          f"{up.conns - conns0} TCP connections in total (https:// steps included); {drv.mismatch} client/mock mismatches")
+            hits0, conns0 = len(up.hits), up.conns
+    finally:
+        up.close()
+        shutil.rmtree(tmp, ignore_errors=True)
+    if dry or a.os_smoke:
+        print("\n[openshell] dry run complete: no sandbox was created, no result files written." if dry else "\n[openshell] smoke run complete.")
+        return
+    same = [(x, y) for i, x in enumerate(host_sets) for y in list(host_sets)[i + 1:] if host_sets[x] == host_sets[y]]
+    extra = list(info) + ["",
+        f"Pinned OpenShell release {OS_PIN} (commit f3d976590d3eb1379690a2abaf0f0e26c21d487d). Policy language: YAML/Rego. Cedar is NOT in this release.", "",
+        "## What OpenShell cannot express (bollard-openshell gap report, verbatim stderr, one per policy)", ""]
+    for p, g in gaps.items():
+        extra += [f"### {p}", "", "```", g.strip(), "```", ""]
+    extra += ["## Translator-output findings", "",
+              "- Policies whose translations are IDENTICAL host sets (the translator collapses trusted and conditional hosts, so OpenShell cannot tell them apart): " + (", ".join(f"`{x}` = `{y}`" for x, y in same) or "none"),
+              "- Harness edits applied to the translator's output before OpenShell would accept and use it:"] + [f"  - {e}" for e in edits_seen] + [""]
+    if notes:
+        extra += notes + [""]
+    extra += probes_md("Benign-traffic probes (OpenShell, strict policy)", probe_res) if probe_res else []
+    extra += ["## Ground truth", "", "A verdict is 'allowed' only if the request (http://) or the TCP connection (https://) reached the mock upstream:", ""] + ground + [""]
+    md = render(all_summ, evasion or {"(not run)": {"evaded": False, "status": None, "reason": ""}}, None,
+                "driver: openshell (real OpenShell sandbox, supervisor policy engine)", extra)
+    out.mkdir(exist_ok=True)
+    (out / "openshell.json").write_text(json.dumps({"summary": all_summ, "evasion": evasion, "raw": raw, "traces": traces, "gaps": gaps, "edits": edits_seen}, indent=2))
+    (out / "openshell.md").write_text(md)
+    print(md)
+    if (out / "bollard-proxy.json").exists() and not a.only:
+        (out / "comparison-openshell.md").write_text(write_os_comparison(out))
+
+
 def run_real_driver(a, tasks):
     """--driver bollard-proxy | pipelock: real requests through a real proxy."""
     out = Path(a.out)
@@ -1067,8 +1506,21 @@ def run_real_driver(a, tasks):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--policies", nargs="*", default=POLICIES)
-    ap.add_argument("--driver", choices=["replay", "bollard-proxy", "pipelock"], default="replay",
-                    help="replay: in-process adapter (default); bollard-proxy / pipelock: send real requests through the real proxy")
+    ap.add_argument("--driver", choices=["replay", "bollard-proxy", "pipelock", "openshell"], default="replay",
+                    help="replay: in-process adapter (default); bollard-proxy / pipelock: send real requests through the real proxy; "
+                         "openshell: real requests from inside a real NVIDIA OpenShell sandbox (Linux VM only, see bench/openshell/RUNBOOK.md)")
+    ap.add_argument("--dry-run", action="store_true", help="--driver openshell only: print the planned commands, execute nothing (the local translator still runs)")
+    ap.add_argument("--os-bin", default="openshell", help="openshell CLI")
+    ap.add_argument("--os-image", default="bench-curl:local", help="sandbox image with curl (bench/openshell/image/Dockerfile)")
+    ap.add_argument("--os-ip", default="10.99.99.1", help="private address of the mock upstream and of every *.bench.test name (bench/openshell/host-net.sh)")
+    ap.add_argument("--os-port", type=int, default=18080, help="mock upstream port; the translator's :443 is rewritten to this")
+    ap.add_argument("--os-workdir", default=str(BENCH / "openshell" / "out"), help="where the generated OpenShell policies are written")
+    ap.add_argument("--os-raw", action="store_true", help="also run the translator's UNEDITED output (expected: OpenShell rejects it) for the first policy")
+    ap.add_argument("--os-fs-header", action="store_true", help="add the quickstart filesystem_policy/landlock header to the generated policy")
+    ap.add_argument("--os-no-allowed-ips", action="store_true", help="do not add allowed_ips to the endpoints (relies on exact declared hosts reaching private addresses)")
+    ap.add_argument("--os-keep", action="store_true", help="do not delete each sandbox when its policy finishes (so `openshell logs <name>` still works)")
+    ap.add_argument("--os-print-hosts", action="store_true", help="print the /etc/hosts lines every corpus host needs, then exit")
+    ap.add_argument("--os-smoke", action="store_true", help="4 probes (allowed/denied x http/https) on the strict policy with raw output, then exit")
     ap.add_argument("--pipelock-bin", help="pipelock binary built with `go build ./cmd/pipelock` (or env PIPELOCK_BIN)")
     ap.add_argument("--pipelock-src", help="pipelock checkout, read for its shipped configs/*.yaml (or env PIPELOCK_SRC)")
     ap.add_argument("--live", action="store_true", help="drive a real model instead of replaying traces")
@@ -1081,6 +1533,10 @@ def main():
     tasks = json.load(open(BENCH / "tasks.json"))["tasks"]
     if a.only:
         tasks = [t for t in tasks if t["id"] in a.only]
+    if a.dry_run and a.driver != "openshell":
+        sys.exit("--dry-run is only implemented for --driver openshell")
+    if a.driver == "openshell":
+        return run_openshell(a, tasks)
     if a.driver != "replay" and not a.live:
         return run_real_driver(a, tasks)
     mode = f"live: {a.model}" if a.live else "replay"

@@ -1,0 +1,8 @@
+# everything setup.sh and the driver generate stays out of git
+out/
+downloads/
+toolchain/
+cargo-home/
+target/
+env.sh
+versions.txt

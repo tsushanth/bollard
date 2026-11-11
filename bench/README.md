@@ -54,6 +54,14 @@ with both present, `results/comparison.md` puts them side by side.
   directory (never `curl | sh`, never `pipelock init`, which touches agent
   configs). The result file records the build and source commit.
 
+* `--driver openshell` runs the same corpus from inside a real **NVIDIA OpenShell** sandbox (v0.1.8, Linux VM only).
+  Each policy is the committed Bollard policy passed through `bollard-openshell`, plus the minimal edits OpenShell
+  needs (listed in the result file), and the result file reports separately what OpenShell cannot express. Hosts map to
+  `<host-with-dashes>.bench.test` (not `.localhost`: OpenShell never allows loopback destinations) on a private address.
+  **Not yet run end to end.** Procedure, risks and sources: [`bench/openshell/RUNBOOK.md`](openshell/RUNBOOK.md);
+  `--dry-run` prints the planned commands on any machine:
+  `python3 -I bench/run_bench.py --driver openshell --dry-run --policies strict --only b01-research-to-slack`.
+
 ### Live mode (a real model drives the agent)
 
 ```sh
