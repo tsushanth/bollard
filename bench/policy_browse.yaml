@@ -1,0 +1,23 @@
+# Policy variant 2 (browse): strict + a hand-enumerated list of public sites as
+# CONDITIONAL sinks (reachable until the context holds private data + untrusted
+# content). Bollard has no wildcard and no GET-vs-POST distinction, so the
+# operator has to enumerate sites; randomblog.example.net is the long tail that
+# is never listed.
+allow_hosts:
+  - inference.corp.test
+  - pypi.org
+  - registry.npmjs.org
+conditional_hosts:
+  - api.github.com
+  - slack.com
+  - docs.google.com
+  - api.linear.app
+  - wiki.corp.test
+  - mail.corp.test
+  - docs.python.org
+  - en.wikipedia.org
+  - stackoverflow.com
+  - arxiv.org
+  - developer.mozilla.org
+untrusted_labels: [untrusted-web, untrusted-email]
+sensitive_labels: [private, secret]

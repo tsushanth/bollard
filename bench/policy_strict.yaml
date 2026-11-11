@@ -1,0 +1,16 @@
+# Policy variant 1 (strict): a small, explicit allowlist. Package registries and
+# the model endpoint are trusted sinks; collaboration tools are conditional.
+# Anything else, including every public website, is denied by default.
+allow_hosts:
+  - inference.corp.test
+  - pypi.org
+  - registry.npmjs.org
+conditional_hosts:
+  - api.github.com
+  - slack.com
+  - docs.google.com
+  - api.linear.app
+  - wiki.corp.test
+  - mail.corp.test
+untrusted_labels: [untrusted-web, untrusted-email]
+sensitive_labels: [private, secret]

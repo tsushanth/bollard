@@ -1,0 +1,21 @@
+# Policy variant 3 (open): public sites are TRUSTED sinks (always allowed, even
+# from a tainted context), so browsing never breaks. The cost is that a trusted
+# host is an exfiltration channel Bollard no longer gates by label.
+allow_hosts:
+  - inference.corp.test
+  - pypi.org
+  - registry.npmjs.org
+  - docs.python.org
+  - en.wikipedia.org
+  - stackoverflow.com
+  - arxiv.org
+  - developer.mozilla.org
+conditional_hosts:
+  - api.github.com
+  - slack.com
+  - docs.google.com
+  - api.linear.app
+  - wiki.corp.test
+  - mail.corp.test
+untrusted_labels: [untrusted-web, untrusted-email]
+sensitive_labels: [private, secret]

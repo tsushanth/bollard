@@ -1,0 +1,6 @@
+# Used only by the proxy-conformance check: loopback names stand in for hosts so
+# the real proxy can be driven against a local mock upstream.
+allow_hosts: [localhost]
+conditional_hosts: [127.0.0.1]
+untrusted_labels: [untrusted-web]
+sensitive_labels: [private, secret]
