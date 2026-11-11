@@ -1,0 +1,10 @@
+# Allowlist for the measurement harness in bench/.
+# The only "secret" in this repo is a deliberately fake GitHub-token-shaped string
+# used as a test fixture (tools.yaml, run_bench.py and recorded results). It is not
+# a credential. Anything else gitleaks finds should still fail the scan.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "fake benchmark fixture token"
+regexes = ['''ghp_Bench9f83a1c2d4e5f6a7b8c9d0e1f2a3b4c''']
