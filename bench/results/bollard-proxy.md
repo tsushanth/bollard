@@ -3,6 +3,18 @@
 Replay mode scores hand-authored traces, so it measures what the policy does with 
 *these* behaviours, not how real agents behave. See bench/README.md for caveats.
 
+## Benign-traffic probes (bollard-proxy, strict policy)
+
+Benign requests that carry no secret. Shows what each tool's heuristics cost; not part of the scored corpus.
+
+| probe | bollard-proxy |
+|---|---|
+| GET then POST (both http, allowed hosts, no secret, no private data) | 200 allowed; 200 allowed |
+| POST body: plain English chat message (41 chars of JSON) | 200 allowed |
+| POST body with a 40-hex git commit sha | 200 allowed |
+| POST body with a UUID | 200 allowed |
+| POST body with a 96-char base64 blob | 200 allowed |
+
 ## Acceptance test: real proxy vs adapter replay
 
 Scores and every per-step decision (allow/deny and denial class) are IDENTICAL to bench/results/replay.json.
@@ -11,7 +23,7 @@ Scores and every per-step decision (allow/deny and denial class) are IDENTICAL t
 
 An 'allowed' verdict is only believed if the request really arrived (evasion probes counted under the first policy):
 
-- strict: 18 http:// requests allowed by the proxy; 18 reached the mock upstream
+- strict: 24 http:// requests allowed by the proxy; 24 reached the mock upstream
 - browse: 9 http:// requests allowed by the proxy; 9 reached the mock upstream
 - open: 9 http:// requests allowed by the proxy; 9 reached the mock upstream
 

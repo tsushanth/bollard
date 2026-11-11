@@ -27,6 +27,33 @@ Output goes to `bench/results/replay.{md,json}` (the JSON includes every trace).
 Exit code 2 means the adapter disagreed with the real proxy, so the scores are
 not trustworthy.
 
+### Drivers: score real proxies instead of the adapter
+
+```sh
+python3 -I bench/run_bench.py --driver bollard-proxy        # real bollard-proxy + broker, no adapter
+python3 -I bench/run_bench.py --driver pipelock --pipelock-bin <go build ./cmd/pipelock> --pipelock-src <checkout>
+```
+
+Each egress step becomes a real request to a local mock upstream: `http://` steps
+are absolute-form requests, `https://` steps are a CONNECT (200 Connection
+Established = allowed). Corpus hosts map to `<host-with-dashes>.localhost`
+(loopback); policy files are rewritten to those names at runtime, the committed
+`policy_*.yaml` are untouched. Verdict = the proxy's own answer (200 / 403).
+The denial class comes from Bollard's egress log, or from Pipelock's documented
+`X-Pipelock-Block-Reason(-Layer)` headers. Results go to `results/<driver>.{md,json}`;
+with both present, `results/comparison.md` puts them side by side.
+
+* `--driver bollard-proxy` is the acceptance test for the adapter: it compares
+  every per-step decision with `results/replay.json` and exits 3 on any difference.
+* `--driver pipelock` starts a fresh Pipelock per task (its adaptive, taint and
+  rate state is per session, like Bollard's `/reset`), under a scrubbed
+  environment on loopback, from its **shipped preset files** with only the edits
+  listed in the result file. It sees only what reaches the proxy; it gets no tool
+  provenance. TLS interception is OFF except in the `A+tls` pass.
+* Third-party rule: build Pipelock yourself with `go build` into a scratch
+  directory (never `curl | sh`, never `pipelock init`, which touches agent
+  configs). The result file records the build and source commit.
+
 ### Live mode (a real model drives the agent)
 
 ```sh
