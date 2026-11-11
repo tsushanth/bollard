@@ -58,7 +58,9 @@ with both present, `results/comparison.md` puts them side by side.
   Each policy is the committed Bollard policy passed through `bollard-openshell`, plus the minimal edits OpenShell
   needs (listed in the result file), and the result file reports separately what OpenShell cannot express. Hosts map to
   `<host-with-dashes>.bench.test` (not `.localhost`: OpenShell never allows loopback destinations) on a private address.
-  **Not yet run end to end.** Procedure, risks and sources: [`bench/openshell/RUNBOOK.md`](openshell/RUNBOOK.md);
+  **Run end to end on 2026-11-11** (Ubuntu 24.04 VM, OpenShell 0.1.8): results in `results/openshell.{md,json}`,
+  `results/comparison-openshell.md` and raw evidence in `results/openshell-evidence/`; the run record is at the end of the runbook.
+  Procedure, risks and sources: [`bench/openshell/RUNBOOK.md`](openshell/RUNBOOK.md);
   `--dry-run` prints the planned commands on any machine:
   `python3 -I bench/run_bench.py --driver openshell --dry-run --policies strict --only b01-research-to-slack`.
 

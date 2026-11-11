@@ -1035,7 +1035,10 @@ OS_META = "\\n__BENCH_META__ http=%{http_code} connect=%{http_connect} exit=%{ex
 
 
 def os_map_host(host):
-    return host.lower().replace(".", "-") + OS_SUFFIX
+    # A DNS label is at most 63 characters. The corpus's a13 probe puts a 58-character encoded secret in the first label, which
+    # becomes 70+ characters after the dots are turned into dashes, so the sandbox's own resolver (curl exit 6) rejects it
+    # before OpenShell makes any decision. Truncate to 63 so the request reaches OpenShell's policy layer.
+    return host.lower().replace(".", "-")[:63].rstrip("-") + OS_SUFFIX
 
 
 def os_corpus_hosts(tasks):
@@ -1150,7 +1153,7 @@ class OsUpstream:
 
 def os_classify(text):
     """OpenShell's own deny wording -> the harness's classes (allowlist / l7 / binary / ssrf / error)."""
-    if re.search(r"is not allowed by any policy|network connections not allowed by policy", text):
+    if re.search(r"is not allowed by any policy|network connections not allowed by policy|policy_dns_ineligible|transparent_tcp_policy_denied|does not authorize the requested port|transparent_tcp_mapping_denied", text):
         return "allowlist"
     if "binary '" in text or re.search(r"binary .* not allowed in policy", text):
         return "binary"
@@ -1233,21 +1236,32 @@ class OpenShellDriver:
         return argv + ["-w", OS_META, url]
 
     def deny_from_logs(self, host, t0):
-        """Latest DENIED line in `openshell logs` that names this host, newer than t0. -> (reason, policy, line) or None."""
+        """OpenShell's own deny words for this host, newer than t0, from `openshell logs`. -> (reason, policy, line) or None.
+        v0.1.8 mediates TCP transparently (policy DNS + synthetic addresses), so one denial is several log lines:
+        `NET:REFUSE ... [reason:policy_dns_ineligible]` (name not in policy), a WARN carrying the verbose
+        `reason=endpoint <host>:<port> is not allowed by any policy`, and `NET:OPEN ... DENIED ... [reason:transparent_tcp_policy_denied]`.
+        All distinct reasons seen for the host are kept, verbose one first."""
         for attempt in range(4):
             r = self.run([self.a.os_bin, "logs", self.sandbox, "--source", "sandbox", "-n", "300", "--since", "5m"], timeout=60)
-            best = None
+            verbose, tags, pols, last = [], [], [], None
             for ln in (r.stdout or "").splitlines():
-                if "DENIED" not in ln or host not in ln:
+                if host not in ln or not ("DENIED" in ln or re.search(r"Denied .*(?:reason|error)=", ln)):
                     continue
                 ts = re.match(r"^\[(\d+(?:\.\d+)?)\]", ln)
                 if ts and float(ts.group(1)) < t0 - 2:
                     continue
-                best = ln
-            if best:
-                rs = re.search(r"\[reason:(.*)\]\s*$", best)
-                po = re.search(r"\[policy:(\S*?)[\s\]]", best)
-                return (rs.group(1) if rs else best, po.group(1) if po else "", best)
+                last = ln
+                for m in re.finditer(r"(?:reason|error)=(.+?)\s*$", ln):
+                    if m.group(1) not in verbose:
+                        verbose.append(m.group(1))
+                for m in re.finditer(r"\[reason:([^\]]*)\]", ln):
+                    if m.group(1) not in tags:
+                        tags.append(m.group(1))
+                po = re.search(r"\[policy:(\S*?)[\s\]]", ln)
+                if po and po.group(1) not in pols:
+                    pols.append(po.group(1))
+            if last:
+                return ("; ".join(verbose + [f"[reason:{t}]" for t in tags]), ",".join(pols), last)
             time.sleep(0.7 * (attempt + 1))  # the gateway log stream lags the decision
         return None
 
@@ -1321,10 +1335,35 @@ def write_os_comparison(out):
          "OpenShell has none of them, by design (see the findings in results/openshell.md). Task a11 (model routing, no egress) is "
          "not expressible to a proxy and counts as not attempted for OpenShell.", "",
          "| tool | config | benign tasks completed | benign egress blocked | baseline attacks leaked | gap probes leaked (of 10) |", "|---|---|---|---|---|---|"]
+    kp = json.load(open(out / "pipelock.json")) if (out / "pipelock.json").exists() else None
     for p in b["summary"]:
         L.append(row("Bollard (real proxy)", f"policy {p}", b["summary"][p]))
         if p in o["summary"]:
             L.append(row("OpenShell", f"policy {p} translated + harness edits", o["summary"][p]))
+        if kp and f"{p}/A" in kp["summary"]:
+            L.append(row("Pipelock", f"{p} / strict preset, allowlist = trusted+conditional hosts (closest to OpenShell's host list)", kp["summary"][f"{p}/A"]))
+    L += ["", "## What leaked", ""]
+    for p in o["summary"]:
+        sm = o["summary"][p]
+        L.append(f"- OpenShell, policy {p}: baseline {sm['baseline_leaked'] or 'none'}; gap probes {sm['gap_probes_leaked']}")
+    if o.get("evasion") and kp:
+        a_key = "strict/A" if "strict/A" in kp["evasion"] else next(iter(kp["evasion"]))
+        L += ["", "## DLP evasion (http:// POST body to an allowed host; passed = reached the upstream)", "",
+              f"| payload | Bollard | Pipelock ({a_key}) | OpenShell |", "|---|---|---|---|"]
+        fmt = lambda x: "n/a" if x is None else ("**passed**" if x else "blocked")
+        for name, v in o["evasion"].items():
+            bv = b.get("evasion", {}).get(name, {}).get("evaded")
+            pv = kp["evasion"][a_key].get(name, {}).get("evaded")
+            L.append(f"| {name} | {fmt(bv)} | {fmt(pv)} | {fmt(v['evaded'])} |")
+    L += ["", "## What is and is not directly comparable", "",
+          "- Same: the 36-trace corpus, task order, the scoring code, the allowlist content (Bollard's policy files), http vs https step types.",
+          "- Different transport: Bollard and Pipelock are proxies on loopback (`<host>.localhost`); OpenShell is a sandbox supervisor reached by a real `curl` run inside the sandbox, "
+          "with names mapped to `<host>.bench.test` on a private address, because OpenShell never allows loopback. An https:// step counts as allowed when the TCP connection reaches the mock "
+          "(Bollard/Pipelock: CONNECT answered 200); a blind tunnel and OpenShell's mediation look identical to that test.",
+          "- Different policy source: OpenShell runs the translated policy plus the listed harness edits, not the committed policy. Bollard's taint, DLP and conditional-sink rules do not exist for it. "
+          "The OpenShell rows therefore measure host:port + binary allowlisting only; the comparison with Bollard is a comparison of Bollard's extra layers, not of two equivalent products.",
+          "- Pipelock's `A` rows are the nearest analogue (an allowlist of the same hosts) but Pipelock adds its own DLP and entropy heuristics, which OpenShell lacks.",
+          "- Denial classes: OpenShell's come from its own sandbox log; there is no taint or DLP class for it."]
     return "\n".join(L) + "\n"
 
 

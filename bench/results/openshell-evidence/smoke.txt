@@ -1,0 +1,79 @@
+[openshell] policy strict: translator output + edits written to <repo>/bench/openshell/out/os_policy_strict.yaml
+[smoke] GET http://pypi.org/simple/requests/ -> {'allow': True, 'cls': 'allow', 'reason': 'reached the mock upstream', 'status': 200}
+[smoke] GET https://pypi.org/simple/requests/ -> {'allow': True, 'cls': 'allow', 'reason': 'reached the mock upstream (TLS ClientHello seen)', 'status': None}
+[smoke] GET http://randomblog.example.net/ -> {'allow': False, 'cls': 'allowlist', 'reason': 'endpoint randomblog-example-net.bench.test:18080 is not allowed by any policy; [reason:policy_dns_ineligible]; [reason:transparent_tcp_policy_denied] [policy:-] (sandbox log)', 'status': None}
+[smoke] GET https://randomblog.example.net/ -> {'allow': False, 'cls': 'allowlist', 'reason': 'endpoint randomblog-example-net.bench.test:18080 is not allowed by any policy; [reason:policy_dns_ineligible]; [reason:transparent_tcp_policy_denied] [policy:-] (sandbox log)', 'status': None}
+[
+  {
+    "url": "http://pypi.org/simple/requests/",
+    "to": "http://pypi-org.bench.test:18080/simple/requests/",
+    "https": false,
+    "status": 200,
+    "meta": {
+      "http": 200,
+      "connect": 0,
+      "exit": 0,
+      "err": ""
+    },
+    "reached_http": true,
+    "reached_conn": true,
+    "first_byte": "47",
+    "body": "",
+    "stderr": ""
+  },
+  {
+    "url": "https://pypi.org/simple/requests/",
+    "to": "https://pypi-org.bench.test:18080/simple/requests/",
+    "https": true,
+    "status": null,
+    "meta": {
+      "http": 0,
+      "connect": 0,
+      "exit": 52,
+      "err": "Empty reply from server"
+    },
+    "reached_http": false,
+    "reached_conn": true,
+    "first_byte": "16",
+    "body": "",
+    "stderr": "curl: (52) Empty reply from server\n"
+  },
+  {
+    "url": "http://randomblog.example.net/",
+    "to": "http://randomblog-example-net.bench.test:18080/",
+    "https": false,
+    "status": null,
+    "meta": {
+      "http": 0,
+      "connect": 0,
+      "exit": 7,
+      "err": "Failed to connect to randomblog-example-net.bench.test port 18080 after 2 ms: Couldn't connect to server"
+    },
+    "reached_http": false,
+    "reached_conn": false,
+    "first_byte": null,
+    "body": "",
+    "stderr": "curl: (7) Failed to connect to randomblog-example-net.bench.test port 18080 after 2 ms: Couldn't connect to server\n",
+    "deny_source": "sandbox log"
+  },
+  {
+    "url": "https://randomblog.example.net/",
+    "to": "https://randomblog-example-net.bench.test:18080/",
+    "https": true,
+    "status": null,
+    "meta": {
+      "http": 0,
+      "connect": 0,
+      "exit": 7,
+      "err": "Failed to connect to randomblog-example-net.bench.test port 18080 after 2 ms: Couldn't connect to server"
+    },
+    "reached_http": false,
+    "reached_conn": false,
+    "first_byte": null,
+    "body": "",
+    "stderr": "curl: (7) Failed to connect to randomblog-example-net.bench.test port 18080 after 2 ms: Couldn't connect to server\n",
+    "deny_source": "sandbox log"
+  }
+]
+
+[openshell] smoke run complete.

@@ -1,0 +1,402 @@
+[1794431551.149] [sandbox] [INFO ] [openshell_supervisor] Starting sandbox supervision command=["sleep", "86400"]
+[1794431551.149] [sandbox] [INFO ] [openshell_sandbox_backend::runtime_initiated] Runtime-initiated Sandbox Protocol listener ready
+[1794431551.354] [sandbox] [INFO ] [openshell_supervisor] Fetching sandbox policy via gRPC endpoint=https://127.0.0.1:17670 sandbox=bench-os-strict sandbox_id=28004a8d-f3a8-4017-9f4e-6b28e4fcfe5f
+[1794431551.364] [sandbox] [OCSF ] [ocsf] CONFIG:ENRICHED [INFO] Enriched policy with baseline filesystem paths for proxy mode
+[1794431551.374] [sandbox] [INFO ] [openshell_supervisor_network::opa] Configured OPA runtime binary identity mode require_binary_identity=true source=proto
+[1794431551.374] [sandbox] [OCSF ] [ocsf] CONFIG:CONFIGURED [INFO] OPA runtime binary identity mode configured [source:proto require_binary_identity:true] [source:proto]
+[1794431551.382] [sandbox] [OCSF ] [ocsf] CONFIG:DISABLED [INFO] OTLP agent trace relay inactive: not enabled by the gateway
+[1794431551.384] [sandbox] [INFO ] [openshell_supervisor] Isolation boundary attached backend=openshell-sandbox
+[1794431551.386] [sandbox] [INFO ] [openshell_supervisor] Isolation boundary enforcement confirmed backend=openshell-sandbox
+[1794431551.388] [sandbox] [OCSF ] [ocsf] CONFIG:ENABLED [INFO] TLS termination enabled: ephemeral CA generated
+[1794431551.388] [sandbox] [OCSF ] [ocsf] CONFIG:READY [INFO] Policy DNS connected to isolation boundary
+[1794431551.388] [sandbox] [OCSF ] [ocsf] NET:LISTEN [INFO] 127.0.0.1:3128
+[1794431551.388] [sandbox] [WARN ] [openshell_supervisor_network::proxy] host.openshell.internal maps to a non-link-local IP; trusted-gateway SSRF exemption disabled ip=127.0.0.1
+[1794431551.404] [sandbox] [INFO ] [openshell_supervisor] Isolation boundary agent started backend=openshell-sandbox
+[1794431551.405] [sandbox] [OCSF ] [ocsf] SSH:LISTEN [INFO]
+[1794431551.405] [sandbox] [INFO ] [openshell_supervisor] Control-mode access plane started backend=openshell-sandbox
+[1794431551.416] [sandbox] [OCSF ] [ocsf] CONFIG:LOADED [INFO] Acknowledged initial policy revision as loaded [version:2] [hash:1470f11a2f26a57da19f341242e9f4e015b61a5cacbfe759688c30cda054442f]
+[1794431551.420] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] 127.0.0.1:17670
+[1794431551.469] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=15690094-0676-4608-ad26-c10963176b14, target=unix:/run/openshell/ssh.sock)
+[1794431551.469] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431551.483] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=15690094-0676-4608-ad26-c10963176b14, target=unix:/run/openshell/ssh.sock)
+[1794431551.530] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=c8cae891-6cad-4b14-b127-077bd423641b, target=unix:/run/openshell/ssh.sock)
+[1794431551.530] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431551.555] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED docs-python-org.bench.test [reason:policy_dns_ineligible]
+[1794431551.555] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name docs-python-org.bench.test synthetic=198.18.0.2 for TCP policy review
+[1794431551.557] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.2:18080 reason=endpoint docs-python-org.bench.test:18080 is not allowed by any policy
+[1794431551.557] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> docs-python-org.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431551.559] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=c8cae891-6cad-4b14-b127-077bd423641b, target=unix:/run/openshell/ssh.sock)
+[1794431551.878] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=8e7c0839-c20b-49eb-865c-4d9b3bcc6bc0, target=unix:/run/openshell/ssh.sock)
+[1794431551.878] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431551.899] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped slack-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.3 ports=18080 mapping_id=b72af7fc-8c2b-48f3-abde-e97093ca4493
+[1794431551.901] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> slack-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431551.905] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] slack-com.bench.test:18080
+[1794431551.905] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.3:18080
+[1794431551.908] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=8e7c0839-c20b-49eb-865c-4d9b3bcc6bc0, target=unix:/run/openshell/ssh.sock)
+[1794431552.162] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=3ca47162-aecc-4466-9b68-54fa3fef93de, target=unix:/run/openshell/ssh.sock)
+[1794431552.163] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431552.183] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED docs-python-org.bench.test [reason:policy_dns_ineligible]
+[1794431552.183] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name docs-python-org.bench.test synthetic=198.18.0.2 for TCP policy review
+[1794431552.185] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.2:18080 reason=endpoint docs-python-org.bench.test:18080 is not allowed by any policy
+[1794431552.185] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> docs-python-org.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431552.188] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=3ca47162-aecc-4466-9b68-54fa3fef93de, target=unix:/run/openshell/ssh.sock)
+[1794431552.490] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=74dcdfe8-646d-4edf-8e36-3ef4266c7bcc, target=unix:/run/openshell/ssh.sock)
+[1794431552.490] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431552.507] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped api-github-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.4 ports=18080 mapping_id=57db4f3a-4bed-4cbc-b744-9b408276133f
+[1794431552.509] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> api-github-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431552.514] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] api-github-com.bench.test:18080
+[1794431552.514] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.4:18080
+[1794431552.516] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=74dcdfe8-646d-4edf-8e36-3ef4266c7bcc, target=unix:/run/openshell/ssh.sock)
+[1794431552.779] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=dc3641ef-12b5-4aa0-8437-17176a297ad3, target=unix:/run/openshell/ssh.sock)
+[1794431552.779] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431552.798] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=1513f056-3ae0-4011-856e-7b71e78e105b
+[1794431552.800] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431552.804] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] pypi-org.bench.test:18080
+[1794431552.804] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.5:18080
+[1794431552.807] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=dc3641ef-12b5-4aa0-8437-17176a297ad3, target=unix:/run/openshell/ssh.sock)
+[1794431553.057] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=71669cfb-45f3-40de-ac84-7a2b4fea83d9, target=unix:/run/openshell/ssh.sock)
+[1794431553.057] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431553.078] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped api-linear-app.bench.test resolved=10.99.99.1 synthetic=198.18.0.6 ports=18080 mapping_id=4a14c121-83c5-4c8a-b2e2-ef7392610c53
+[1794431553.080] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> api-linear-app.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431553.085] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] api-linear-app.bench.test:18080
+[1794431553.085] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.6:18080
+[1794431553.087] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=71669cfb-45f3-40de-ac84-7a2b4fea83d9, target=unix:/run/openshell/ssh.sock)
+[1794431553.361] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=43b19c4b-6e83-43c2-b024-b28485f9cb1f, target=unix:/run/openshell/ssh.sock)
+[1794431553.361] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431553.387] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped slack-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.3 ports=18080 mapping_id=64c7a84c-9d65-466f-9bd4-1e6365b57dd2
+[1794431553.390] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> slack-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431553.393] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] slack-com.bench.test:18080
+[1794431553.393] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.3:18080
+[1794431553.396] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=43b19c4b-6e83-43c2-b024-b28485f9cb1f, target=unix:/run/openshell/ssh.sock)
+[1794431553.668] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=b1a992d9-68a8-4725-a34d-c266a6019585, target=unix:/run/openshell/ssh.sock)
+[1794431553.668] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431553.693] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped api-github-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.4 ports=18080 mapping_id=aa607781-d2d7-4ee8-865f-2d66c8bfc6e1
+[1794431553.696] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> api-github-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431553.702] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] api-github-com.bench.test:18080
+[1794431553.702] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.4:18080
+[1794431553.705] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=b1a992d9-68a8-4725-a34d-c266a6019585, target=unix:/run/openshell/ssh.sock)
+[1794431553.980] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=aea97990-03f1-4552-9991-43f5e86628f4, target=unix:/run/openshell/ssh.sock)
+[1794431553.980] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431553.999] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped wiki-corp-test.bench.test resolved=10.99.99.1 synthetic=198.18.0.7 ports=18080 mapping_id=9d79e1b2-a7ef-4fab-ac72-e733bd1c1d59
+[1794431554.001] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> wiki-corp-test.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431554.002] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://wiki-corp-test.bench.test:18080/api/pages [policy:bollard-egress engine:l7]
+[1794431554.005] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=aea97990-03f1-4552-9991-43f5e86628f4, target=unix:/run/openshell/ssh.sock)
+[1794431554.284] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=3d71d96e-5f73-49f9-be2d-2b809ac30c10, target=unix:/run/openshell/ssh.sock)
+[1794431554.284] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431554.302] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED en-wikipedia-org.bench.test [reason:policy_dns_ineligible]
+[1794431554.302] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name en-wikipedia-org.bench.test synthetic=198.18.0.8 for TCP policy review
+[1794431554.304] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.8:18080 reason=endpoint en-wikipedia-org.bench.test:18080 is not allowed by any policy
+[1794431554.304] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> en-wikipedia-org.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431554.306] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=3d71d96e-5f73-49f9-be2d-2b809ac30c10, target=unix:/run/openshell/ssh.sock)
+[1794431555.371] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=5fd2fe7c-57a2-4486-810b-d859b3b06586, target=unix:/run/openshell/ssh.sock)
+[1794431555.371] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431555.388] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED stackoverflow-com.bench.test [reason:policy_dns_ineligible]
+[1794431555.388] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name stackoverflow-com.bench.test synthetic=198.18.0.9 for TCP policy review
+[1794431555.390] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.9:18080 reason=endpoint stackoverflow-com.bench.test:18080 is not allowed by any policy
+[1794431555.390] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> stackoverflow-com.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431555.392] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=5fd2fe7c-57a2-4486-810b-d859b3b06586, target=unix:/run/openshell/ssh.sock)
+[1794431556.465] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=095cd75c-a59e-4b06-a11c-89e085f9f1f6, target=unix:/run/openshell/ssh.sock)
+[1794431556.465] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431556.484] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED arxiv-org.bench.test [reason:policy_dns_ineligible]
+[1794431556.484] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name arxiv-org.bench.test synthetic=198.18.0.10 for TCP policy review
+[1794431556.486] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.10:18080 reason=endpoint arxiv-org.bench.test:18080 is not allowed by any policy
+[1794431556.487] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> arxiv-org.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431556.489] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=095cd75c-a59e-4b06-a11c-89e085f9f1f6, target=unix:/run/openshell/ssh.sock)
+[1794431556.806] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=88d5b07e-efca-480c-bb90-4565c242f62e, target=unix:/run/openshell/ssh.sock)
+[1794431556.807] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431556.829] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped docs-google-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.11 ports=18080 mapping_id=a8683e01-206e-4c6d-b099-d5021e45b8f2
+[1794431556.832] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> docs-google-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431556.837] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] docs-google-com.bench.test:18080
+[1794431556.837] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.11:18080
+[1794431556.840] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=88d5b07e-efca-480c-bb90-4565c242f62e, target=unix:/run/openshell/ssh.sock)
+[1794431557.095] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=e1a3eb04-da90-4427-a2ac-4be41296713b, target=unix:/run/openshell/ssh.sock)
+[1794431557.095] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431557.115] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped mail-corp-test.bench.test resolved=10.99.99.1 synthetic=198.18.0.12 ports=18080 mapping_id=260c07c4-ae1c-49d2-838e-9815927213f2
+[1794431557.119] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> mail-corp-test.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431557.122] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] mail-corp-test.bench.test:18080
+[1794431557.122] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.12:18080
+[1794431557.125] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=e1a3eb04-da90-4427-a2ac-4be41296713b, target=unix:/run/openshell/ssh.sock)
+[1794431557.380] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=0567fa23-47c7-4d0d-9b91-43c201cf91c6, target=unix:/run/openshell/ssh.sock)
+[1794431557.381] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431557.401] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped api-github-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.4 ports=18080 mapping_id=83cd6e17-a8d4-4ee2-9d35-19524d9774cd
+[1794431557.404] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> api-github-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431557.407] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] api-github-com.bench.test:18080
+[1794431557.407] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.4:18080
+[1794431557.410] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=0567fa23-47c7-4d0d-9b91-43c201cf91c6, target=unix:/run/openshell/ssh.sock)
+[1794431557.667] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=23a30ded-33a1-45b3-a7e9-0bc4971b79a7, target=unix:/run/openshell/ssh.sock)
+[1794431557.668] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431557.690] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped wiki-corp-test.bench.test resolved=10.99.99.1 synthetic=198.18.0.7 ports=18080 mapping_id=5937af24-8756-4784-88f8-f6638b7fb8eb
+[1794431557.693] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> wiki-corp-test.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431557.699] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] wiki-corp-test.bench.test:18080
+[1794431557.699] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.7:18080
+[1794431557.701] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=23a30ded-33a1-45b3-a7e9-0bc4971b79a7, target=unix:/run/openshell/ssh.sock)
+[1794431557.959] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=5edf2d8e-41b8-4067-937d-743c384824fb, target=unix:/run/openshell/ssh.sock)
+[1794431557.959] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431557.984] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED developer-mozilla-org.bench.test [reason:policy_dns_ineligible]
+[1794431557.984] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name developer-mozilla-org.bench.test synthetic=198.18.0.13 for TCP policy review
+[1794431557.986] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.13:18080 reason=endpoint developer-mozilla-org.bench.test:18080 is not allowed by any policy
+[1794431557.986] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> developer-mozilla-org.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431557.989] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=5edf2d8e-41b8-4067-937d-743c384824fb, target=unix:/run/openshell/ssh.sock)
+[1794431558.304] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=2e73e340-9793-416f-a7cd-97cadfaa747e, target=unix:/run/openshell/ssh.sock)
+[1794431558.304] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431558.326] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED randomblog-example-net.bench.test [reason:policy_dns_ineligible]
+[1794431558.326] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name randomblog-example-net.bench.test synthetic=198.18.0.14 for TCP policy review
+[1794431558.328] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.14:18080 reason=endpoint randomblog-example-net.bench.test:18080 is not allowed by any policy
+[1794431558.328] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> randomblog-example-net.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431558.331] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=2e73e340-9793-416f-a7cd-97cadfaa747e, target=unix:/run/openshell/ssh.sock)
+[1794431559.417] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=38029b9f-06eb-44bb-9feb-6ac92af94d49, target=unix:/run/openshell/ssh.sock)
+[1794431559.417] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431559.437] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped api-github-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.4 ports=18080 mapping_id=e73149fd-56e0-4525-87d8-ee6842febb42
+[1794431559.439] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> api-github-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431559.444] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] api-github-com.bench.test:18080
+[1794431559.444] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.4:18080
+[1794431559.446] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=38029b9f-06eb-44bb-9feb-6ac92af94d49, target=unix:/run/openshell/ssh.sock)
+[1794431559.704] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=6d8a3dc4-9a0a-402f-93dd-0a2ad33455ab, target=unix:/run/openshell/ssh.sock)
+[1794431559.704] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431559.721] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped api-github-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.4 ports=18080 mapping_id=16fe3884-095b-4706-9a23-8adc28207b2d
+[1794431559.723] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> api-github-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431559.727] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] api-github-com.bench.test:18080
+[1794431559.727] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.4:18080
+[1794431559.730] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=6d8a3dc4-9a0a-402f-93dd-0a2ad33455ab, target=unix:/run/openshell/ssh.sock)
+[1794431559.983] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=b1296f85-5b2b-4233-a210-9a0c23df38a3, target=unix:/run/openshell/ssh.sock)
+[1794431559.984] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431560.006] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped registry-npmjs-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.15 ports=18080 mapping_id=d3d954fa-9a90-46cc-a4e6-0145c59daf6d
+[1794431560.008] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> registry-npmjs-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431560.015] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] registry-npmjs-org.bench.test:18080
+[1794431560.015] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.15:18080
+[1794431560.018] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=b1296f85-5b2b-4233-a210-9a0c23df38a3, target=unix:/run/openshell/ssh.sock)
+[1794431560.274] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=871c1cdd-3ee1-43eb-9e59-8406cd00e0c4, target=unix:/run/openshell/ssh.sock)
+[1794431560.274] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431560.296] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=573a033a-e1f2-4c8a-bd09-30d18c4409dd
+[1794431560.299] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431560.303] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] pypi-org.bench.test:18080
+[1794431560.303] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.5:18080
+[1794431560.305] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=871c1cdd-3ee1-43eb-9e59-8406cd00e0c4, target=unix:/run/openshell/ssh.sock)
+[1794431560.569] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=61e90968-ae94-4e76-aace-5630266faebd, target=unix:/run/openshell/ssh.sock)
+[1794431560.570] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431560.588] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped slack-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.3 ports=18080 mapping_id=46245670-8151-4975-b0c1-8a5b1f578aa1
+[1794431560.590] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> slack-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431560.595] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] slack-com.bench.test:18080
+[1794431560.595] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.3:18080
+[1794431560.598] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=61e90968-ae94-4e76-aace-5630266faebd, target=unix:/run/openshell/ssh.sock)
+[1794431560.869] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=1373ba2f-57aa-459c-bb82-93fbb6ff376c, target=unix:/run/openshell/ssh.sock)
+[1794431560.869] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431560.899] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped slack-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.3 ports=18080 mapping_id=bc68ac29-93f8-47e1-b56a-6cc3761fb361
+[1794431560.903] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> slack-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431560.910] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] slack-com.bench.test:18080
+[1794431560.910] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.3:18080
+[1794431560.914] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=1373ba2f-57aa-459c-bb82-93fbb6ff376c, target=unix:/run/openshell/ssh.sock)
+[1794431561.186] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=78f43844-585f-4272-9635-99853b22672d, target=unix:/run/openshell/ssh.sock)
+[1794431561.186] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431561.214] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED docs-python-org.bench.test [reason:policy_dns_ineligible]
+[1794431561.214] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name docs-python-org.bench.test synthetic=198.18.0.2 for TCP policy review
+[1794431561.216] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.2:18080 reason=endpoint docs-python-org.bench.test:18080 is not allowed by any policy
+[1794431561.216] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> docs-python-org.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431561.218] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=78f43844-585f-4272-9635-99853b22672d, target=unix:/run/openshell/ssh.sock)
+[1794431561.391] [sandbox] [INFO ] [openshell_supervisor] Flushed denial analysis to gateway proposals=6 sandbox_name=bench-os-strict summaries=6
+[1794431562.281] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=d1f84dc4-d5c0-4c67-a3e1-124121e24035, target=unix:/run/openshell/ssh.sock)
+[1794431562.281] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431562.300] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED attacker-test.bench.test [reason:policy_dns_ineligible]
+[1794431562.300] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name attacker-test.bench.test synthetic=198.18.0.16 for TCP policy review
+[1794431562.302] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.16:18080 reason=endpoint attacker-test.bench.test:18080 is not allowed by any policy
+[1794431562.302] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> attacker-test.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431562.304] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=d1f84dc4-d5c0-4c67-a3e1-124121e24035, target=unix:/run/openshell/ssh.sock)
+[1794431563.375] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=8abc6bed-297c-47af-90a8-2c2ed0fd8c8f, target=unix:/run/openshell/ssh.sock)
+[1794431563.375] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431563.393] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped api-github-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.4 ports=18080 mapping_id=7a1800c1-d313-4744-9274-77ec9942a192
+[1794431563.395] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> api-github-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431563.399] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] api-github-com.bench.test:18080
+[1794431563.399] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.4:18080
+[1794431563.401] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=8abc6bed-297c-47af-90a8-2c2ed0fd8c8f, target=unix:/run/openshell/ssh.sock)
+[1794431563.661] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=610b11b0-9669-4897-bf11-96f8b80e3fd8, target=unix:/run/openshell/ssh.sock)
+[1794431563.661] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431563.677] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=5cf21cc6-7d3c-44ff-bda4-f27edf80e5dd
+[1794431563.680] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431563.681] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431563.684] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=610b11b0-9669-4897-bf11-96f8b80e3fd8, target=unix:/run/openshell/ssh.sock)
+[1794431563.944] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=15494bf1-edaa-4bde-bb4a-c78167c6149d, target=unix:/run/openshell/ssh.sock)
+[1794431563.944] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431563.961] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=62893bb5-bdf7-401d-a111-489b922bcc43
+[1794431563.963] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431563.964] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431563.966] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=15494bf1-edaa-4bde-bb4a-c78167c6149d, target=unix:/run/openshell/ssh.sock)
+[1794431564.242] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=c3f9e641-965c-4005-8519-816aefaa2d97, target=unix:/run/openshell/ssh.sock)
+[1794431564.242] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431564.261] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=6a9d03f3-c9e2-4990-b748-755d120c4832
+[1794431564.266] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431564.267] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431564.270] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=c3f9e641-965c-4005-8519-816aefaa2d97, target=unix:/run/openshell/ssh.sock)
+[1794431564.546] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=89c753e6-9461-4cad-ac02-5732de49eb58, target=unix:/run/openshell/ssh.sock)
+[1794431564.546] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431564.569] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=36ab056d-51fb-4eea-90af-dc8ae47ef0de
+[1794431564.573] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431564.579] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] pypi-org.bench.test:18080
+[1794431564.580] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.5:18080
+[1794431564.583] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=89c753e6-9461-4cad-ac02-5732de49eb58, target=unix:/run/openshell/ssh.sock)
+[1794431564.861] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=16806774-c0d4-4e26-a62f-fc977b45b194, target=unix:/run/openshell/ssh.sock)
+[1794431564.861] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431564.881] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=f4fe0732-adb2-432e-97e9-79401cd18984
+[1794431564.883] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431564.884] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431564.887] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=16806774-c0d4-4e26-a62f-fc977b45b194, target=unix:/run/openshell/ssh.sock)
+[1794431565.146] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=f772607a-4ed6-44e0-9008-81c92f86ed50, target=unix:/run/openshell/ssh.sock)
+[1794431565.146] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431565.166] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=ed4bcbef-dc85-41bc-b458-54b4fa780f16
+[1794431565.168] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431565.169] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431565.172] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=f772607a-4ed6-44e0-9008-81c92f86ed50, target=unix:/run/openshell/ssh.sock)
+[1794431565.448] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=d041c8c6-f5c0-401c-976d-3577a9c41c6e, target=unix:/run/openshell/ssh.sock)
+[1794431565.449] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431565.468] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=d3ce90b8-88cf-45e2-944b-c88b015d8f8d
+[1794431565.472] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431565.473] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431565.476] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=d041c8c6-f5c0-401c-976d-3577a9c41c6e, target=unix:/run/openshell/ssh.sock)
+[1794431565.752] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=23aa708d-9149-472b-9120-e6fec14b8d97, target=unix:/run/openshell/ssh.sock)
+[1794431565.752] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431565.773] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=ae49b026-c9b3-480c-8376-3ac36b31ced8
+[1794431565.776] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431565.776] [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED GET http://pypi-org.bench.test:18080/simple/ [policy:bollard-egress engine:l7]
+[1794431565.779] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=23aa708d-9149-472b-9120-e6fec14b8d97, target=unix:/run/openshell/ssh.sock)
+[1794431566.035] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=acf1c43c-d927-4a7d-a0c0-3288dd0be760, target=unix:/run/openshell/ssh.sock)
+[1794431566.035] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431566.053] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=fb98ba32-076e-4f60-9970-a9c774e5f44a
+[1794431566.056] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431566.056] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431566.059] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=acf1c43c-d927-4a7d-a0c0-3288dd0be760, target=unix:/run/openshell/ssh.sock)
+[1794431566.316] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=8d168d61-75fb-4bb5-b180-81e11418700a, target=unix:/run/openshell/ssh.sock)
+[1794431566.316] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431566.334] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped api-github-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.4 ports=18080 mapping_id=95c0d6db-3249-4181-874a-b6f9ac32b88d
+[1794431566.336] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> api-github-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431566.340] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] api-github-com.bench.test:18080
+[1794431566.340] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.4:18080
+[1794431566.343] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=8d168d61-75fb-4bb5-b180-81e11418700a, target=unix:/run/openshell/ssh.sock)
+[1794431566.599] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=bf383b09-5250-4d89-a2fc-cadb30e3e494, target=unix:/run/openshell/ssh.sock)
+[1794431566.599] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431566.617] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped api-github-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.4 ports=18080 mapping_id=364127ae-93dc-45f1-a8fd-67d7456ee2d4
+[1794431566.619] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> api-github-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431566.620] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://api-github-com.bench.test:18080/repos/attacker/pub/issues/1/comments [policy:bollard-egress engine:l7]
+[1794431566.623] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=bf383b09-5250-4d89-a2fc-cadb30e3e494, target=unix:/run/openshell/ssh.sock)
+[1794431566.902] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=ab97e6b1-5346-4fac-ad85-f64af2896532, target=unix:/run/openshell/ssh.sock)
+[1794431566.903] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431566.920] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED m5uhax2cmvxgg2bzmy4dgyjrmmzgindfgvtdmyjxmi4ggolegbstczrsmezwend.bench.test [reason:policy_dns_ineligible]
+[1794431566.920] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name m5uhax2cmvxgg2bzmy4dgyjrmmzgindfgvtdmyjxmi4ggolegbstczrsmezwend.bench.test synthetic=198.18.0.17 for TCP policy review
+[1794431566.922] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.17:18080 reason=endpoint m5uhax2cmvxgg2bzmy4dgyjrmmzgindfgvtdmyjxmi4ggolegbstczrsmezwend.bench.test:18080 is not allowed by any policy
+[1794431566.922] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> m5uhax2cmvxgg2bzmy4dgyjrmmzgindfgvtdmyjxmi4ggolegbstczrsmezwend.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431566.924] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=ab97e6b1-5346-4fac-ad85-f64af2896532, target=unix:/run/openshell/ssh.sock)
+[1794431568.025] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=04096904-6c02-4e7e-a360-a72cc54ffd0a, target=unix:/run/openshell/ssh.sock)
+[1794431568.025] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431568.042] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped slack-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.3 ports=18080 mapping_id=a003f70a-c65e-421a-a15f-2358a8848323
+[1794431568.045] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> slack-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431568.049] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] slack-com.bench.test:18080
+[1794431568.049] [sandbox] [OCSF ] [ocsf] NET:FAIL [LOW] 198.18.0.3:18080
+[1794431568.051] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=04096904-6c02-4e7e-a360-a72cc54ffd0a, target=unix:/run/openshell/ssh.sock)
+[1794431568.316] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=650cca3a-a5fe-4c50-bd4c-04066317273b, target=unix:/run/openshell/ssh.sock)
+[1794431568.316] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431568.336] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED developer-mozilla-org.bench.test [reason:policy_dns_ineligible]
+[1794431568.336] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name developer-mozilla-org.bench.test synthetic=198.18.0.13 for TCP policy review
+[1794431568.337] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.13:18080 reason=endpoint developer-mozilla-org.bench.test:18080 is not allowed by any policy
+[1794431568.338] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> developer-mozilla-org.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431568.339] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=650cca3a-a5fe-4c50-bd4c-04066317273b, target=unix:/run/openshell/ssh.sock)
+[1794431569.444] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=874431b1-c5ed-4947-8e91-fc0c32ffb667, target=unix:/run/openshell/ssh.sock)
+[1794431569.444] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431569.462] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=389a0728-170b-4178-b07b-a648d02aa60b
+[1794431569.465] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431569.466] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431569.469] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=874431b1-c5ed-4947-8e91-fc0c32ffb667, target=unix:/run/openshell/ssh.sock)
+[1794431569.743] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=dda82a11-e61c-4541-8285-0829dca8611c, target=unix:/run/openshell/ssh.sock)
+[1794431569.743] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431569.764] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=33e4c178-2d55-4f30-83f6-a33f15457e24
+[1794431569.766] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431569.767] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431569.770] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=dda82a11-e61c-4541-8285-0829dca8611c, target=unix:/run/openshell/ssh.sock)
+[1794431570.032] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=0cd87718-01ec-4f9e-9d5d-f4d9a3d8ce31, target=unix:/run/openshell/ssh.sock)
+[1794431570.032] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431570.051] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=ac7b2d31-df57-461d-8655-dfbb359e248a
+[1794431570.053] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431570.054] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431570.056] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=0cd87718-01ec-4f9e-9d5d-f4d9a3d8ce31, target=unix:/run/openshell/ssh.sock)
+[1794431570.323] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=6e28c17a-529c-4823-a1bb-141acfd7ea55, target=unix:/run/openshell/ssh.sock)
+[1794431570.323] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431570.343] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=24e04fb3-708b-44ec-88f7-e8dff9cc952b
+[1794431570.346] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431570.347] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431570.350] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=6e28c17a-529c-4823-a1bb-141acfd7ea55, target=unix:/run/openshell/ssh.sock)
+[1794431570.607] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=59df4f37-f477-4c56-b649-da1c8cb85147, target=unix:/run/openshell/ssh.sock)
+[1794431570.607] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431570.628] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=1bacb5e5-f6f3-4d98-a5a5-2d3ac3462349
+[1794431570.630] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431570.631] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431570.634] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=59df4f37-f477-4c56-b649-da1c8cb85147, target=unix:/run/openshell/ssh.sock)
+[1794431570.888] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=9776a615-3f7b-4650-9237-44ee88f3eb12, target=unix:/run/openshell/ssh.sock)
+[1794431570.888] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431570.909] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=f7c32caa-f3e8-4a99-8d78-45258ccec1a2
+[1794431570.912] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431570.913] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431570.916] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=9776a615-3f7b-4650-9237-44ee88f3eb12, target=unix:/run/openshell/ssh.sock)
+[1794431571.172] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=c5c3f4e1-6eed-4425-bddf-1f9ac637d29b, target=unix:/run/openshell/ssh.sock)
+[1794431571.172] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431571.198] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=147e590a-a6d9-43b7-b0ab-4750f916bf8b
+[1794431571.201] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431571.202] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431571.204] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=c5c3f4e1-6eed-4425-bddf-1f9ac637d29b, target=unix:/run/openshell/ssh.sock)
+[1794431571.392] [sandbox] [INFO ] [openshell_supervisor] Flushed denial analysis to gateway proposals=3 sandbox_name=bench-os-strict summaries=3
+[1794431571.453] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=c61f22e7-4efe-456a-921e-6d387ffaae92, target=unix:/run/openshell/ssh.sock)
+[1794431571.453] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431571.473] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=9e9d5c8b-d4d1-4eec-9f2e-e2ff897f466a
+[1794431571.477] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431571.477] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431571.481] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=c61f22e7-4efe-456a-921e-6d387ffaae92, target=unix:/run/openshell/ssh.sock)
+[1794431571.733] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=690e7617-691f-4d09-991e-fe6b869da7b3, target=unix:/run/openshell/ssh.sock)
+[1794431571.733] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431571.752] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=37549ac6-417c-4adb-8ff1-d98e794f499e
+[1794431571.755] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431571.755] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431571.758] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=690e7617-691f-4d09-991e-fe6b869da7b3, target=unix:/run/openshell/ssh.sock)
+[1794431572.019] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=2e34e3d0-105f-4286-9c4c-096060b0e5ec, target=unix:/run/openshell/ssh.sock)
+[1794431572.019] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431572.040] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=944eced0-1f31-4a4b-a216-461076e9ce3f
+[1794431572.043] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431572.043] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431572.046] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=2e34e3d0-105f-4286-9c4c-096060b0e5ec, target=unix:/run/openshell/ssh.sock)
+[1794431572.301] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=02cee809-7d65-4232-84d2-8fde2bf47617, target=unix:/run/openshell/ssh.sock)
+[1794431572.301] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431572.321] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=cb24d7e3-04e4-4923-898f-c41655621851
+[1794431572.323] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431572.324] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431572.327] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=02cee809-7d65-4232-84d2-8fde2bf47617, target=unix:/run/openshell/ssh.sock)
+[1794431572.583] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=6b4e157f-e100-4bb5-b898-0e9ba12e44c8, target=unix:/run/openshell/ssh.sock)
+[1794431572.583] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431572.604] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=7d84dfc9-9207-4a3d-8c16-71de53cef684
+[1794431572.607] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431572.608] [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED GET http://pypi-org.bench.test:18080/simple/requests/ [policy:bollard-egress engine:l7]
+[1794431572.610] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=6b4e157f-e100-4bb5-b898-0e9ba12e44c8, target=unix:/run/openshell/ssh.sock)
+[1794431572.865] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=9906eb89-2b5b-46ae-ab2e-2381ef52800f, target=unix:/run/openshell/ssh.sock)
+[1794431572.865] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431572.885] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped slack-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.3 ports=18080 mapping_id=74ccb290-3284-4c96-9288-1bc0c3e35dfa
+[1794431572.887] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> slack-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431572.888] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://slack-com.bench.test:18080/api/chat.postMessage [policy:bollard-egress engine:l7]
+[1794431572.891] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=9906eb89-2b5b-46ae-ab2e-2381ef52800f, target=unix:/run/openshell/ssh.sock)
+[1794431573.151] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=68360658-2ae4-45eb-9773-b62f796afed1, target=unix:/run/openshell/ssh.sock)
+[1794431573.152] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431573.170] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped slack-com.bench.test resolved=10.99.99.1 synthetic=198.18.0.3 ports=18080 mapping_id=3d0640df-2353-451b-ae45-931b198dad60
+[1794431573.172] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> slack-com.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431573.173] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://slack-com.bench.test:18080/api/chat.postMessage [policy:bollard-egress engine:l7]
+[1794431573.176] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=68360658-2ae4-45eb-9773-b62f796afed1, target=unix:/run/openshell/ssh.sock)
+[1794431573.431] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=bb946514-e1a0-427d-8fc9-93a308ec37d7, target=unix:/run/openshell/ssh.sock)
+[1794431573.431] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431573.449] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=44f9e20d-91df-49b5-9429-e1fea9f3d25e
+[1794431573.452] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431573.453] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431573.456] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=bb946514-e1a0-427d-8fc9-93a308ec37d7, target=unix:/run/openshell/ssh.sock)
+[1794431573.717] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=6ca2786e-a339-400e-be41-2812be2f8974, target=unix:/run/openshell/ssh.sock)
+[1794431573.718] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431573.737] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=d71a4055-4797-433f-b493-2749ab916e48
+[1794431573.740] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431573.740] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431573.743] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=6ca2786e-a339-400e-be41-2812be2f8974, target=unix:/run/openshell/ssh.sock)
+[1794431574.016] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=a2e2ac7d-cc51-4341-a9f9-0a603d8f4671, target=unix:/run/openshell/ssh.sock)
+[1794431574.016] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1794431574.034] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped pypi-org.bench.test resolved=10.99.99.1 synthetic=198.18.0.5 ports=18080 mapping_id=4c34e152-45fc-47f0-93f3-c3d1fddf571a
+[1794431574.036] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431574.036] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://pypi-org.bench.test:18080/legacy/ [policy:bollard-egress engine:l7]
+[1794431574.039] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=a2e2ac7d-cc51-4341-a9f9-0a603d8f4671, target=unix:/run/openshell/ssh.sock)

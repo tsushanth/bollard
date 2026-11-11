@@ -1,0 +1,91 @@
+version: 1
+network_policies:
+  bollard-egress:
+    name: bollard_egress
+    endpoints:
+    - host: inference-corp-test.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: pypi-org.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: registry-npmjs-org.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: docs-python-org.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: en-wikipedia-org.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: stackoverflow-com.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: arxiv-org.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: developer-mozilla-org.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: api-github-com.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: slack-com.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: docs-google-com.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: api-linear-app.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: wiki-corp-test.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    - host: mail-corp-test.bench.test
+      allowed_ips: ["10.99.99.1/32"]
+      port: 18080
+      protocol: rest
+      enforcement: enforce
+      access: read-write
+    binaries:
+      - path: /usr/bin/curl

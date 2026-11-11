@@ -1,0 +1,5 @@
+REPOSITORY                            TAG       DIGEST                                                                    IMAGE ID       CREATED         SIZE
+bench-curl                            local     <none>                                                                    8cd7f9f7f897   9 minutes ago   91.7MB
+ghcr.io/nvidia/openshell/supervisor   0.1.8     sha256:deadeacfdba6d12ca27e538d0002696369d4de5a4fcad075ab503495503af9d1   e2b1d34e5476   27 hours ago    65.8MB
+ghcr.io/nvidia/openshell/sandbox      0.1.8     sha256:f0fe7dbf18d833acb5da99c405231124718f23b524aa8e3c0108e6f37530033b   4bc87f41cfe3   27 hours ago    11.7MB
+nvcr.io/nvidia/base/ubuntu            24.04     sha256:fef8f2708dbb85fbfcba6503d805397d89d9210f375362ff3b9f7888eb297ca5   8558c44bacf0   2 days ago      83.2MB

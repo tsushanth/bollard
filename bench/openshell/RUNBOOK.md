@@ -3,8 +3,9 @@
 Goal: drive the same 36-trace corpus through a real NVIDIA OpenShell sandbox and compare it with
 `bollard-proxy` and Pipelock (`python3 -I bench/run_bench.py --driver openshell`).
 
-**Status of everything below: written on macOS, never executed against OpenShell.** What was and was not
-tested is in [Test status](#test-status). Every OpenShell command is traceable to a source in
+**Status: executed end to end on 2026-11-11 on a fresh Ubuntu 24.04 VM; the record of what failed and what was fixed is in
+[Run record](#run-record-2026-11-11) at the end.** The steps and predictions below were written beforehand on macOS and are kept
+as written, so you can see which held. [Test status](#test-status) describes the pre-run state. Every OpenShell command is traceable to a source in
 [Sources](#sources); where I inferred rather than read, the step says so.
 
 Pinned target: OpenShell **v0.1.8** (released 2026-11-10, commit `f3d976590d3eb1379690a2abaf0f0e26c21d487d`),
@@ -248,3 +249,66 @@ All paths are in `https://github.com/NVIDIA/OpenShell` at tag `v0.1.8` (commit `
 | Docker apt repo, key fingerprint `9DC858229FC7DD38854AE2D88D81803C0EBFCD88`, `docker-ce 5:28.5.2` | `https://download.docker.com/linux/ubuntu/gpg` and `dists/noble/stable/binary-amd64/Packages.gz` (fetched 2026-11-11) |
 | Rust 1.99.1 tarball sha256 | `https://static.rust-lang.org/dist/rust-1.99.1-<triple>.tar.xz.sha256` |
 | Cedar status | PRs #4565, #5006, #4991, issue #4411 on the OpenShell repo; CNCF post `https://www.cncf.io/blog/2026/11/10/welcoming-openshell-to-the-cncf-open-governance-to-secure-agentic-ai/` |
+
+## Run record (2026-11-11)
+
+Box: Ubuntu 24.04.5, kernel 6.8.0-139, 4 vCPU, 8 GB, Docker 28.5.2, OpenShell 0.1.8 (deb sha256 matched the pin and the published list), Rust 1.99.1.
+The repo was copied without its history (rsync), so `versions.txt` could not record a commit; the tree was `8f57ed6` plus the driver edits listed below.
+Wall clock from a bare VM to the first full result: about 25 minutes, most of it the Rust download; the full three-policy run takes about one minute
+(a `sandbox exec` round trip is about 0.3 s, sandbox creation 1-3 s with the image already local). Versions, image digests, per-sandbox logs and the exact
+output of every step are in `bench/results/openshell-evidence/`.
+
+### What worked first time
+
+`setup.sh` (all checksums matched, translator built), reboot, gateway start and registration (`openshell status` -> Connected, mTLS), the optional
+`compute_driver = "docker"` config, the sandbox image, `host-net.sh up`, the `getent` check from a host-network container. Risks 1-3 and 6 of the list above did not occur:
+the supervisor resolves the mapped names (it runs its own "policy DNS": it answers lookups for policy hosts with the real address and for every other name with a synthetic
+`198.18.0.x` address, and refuses the connection later), the docker group and Landlock were fine, `nvcr.io/nvidia/base/ubuntu:24.04` pulled without authentication, and the supervisor's
+L7 validator accepted the edited policy. Whether the reboot was really required was not tested (it was done as written).
+
+### Failures and fixes
+
+| # | what happened | cause | fix |
+|---|---|---|---|
+| 1 | smoke: denied requests came back as class `error`, reason `transparent_tcp_policy_denied [policy:-]` | v0.1.8 mediates TCP transparently: no proxy variables, no 403 body, curl just gets exit 7 (refused). The words OpenShell gives are spread over three log lines and use `reason:` tags the driver did not know | `deny_from_logs` now keeps every distinct reason for the host (the verbose `reason=endpoint <host>:<port> is not allowed by any policy` from the supervisor WARN line, plus the `[reason:...]` tags); `os_classify` knows `policy_dns_ineligible`, `transparent_tcp_policy_denied`, `transparent_tcp_mapping_denied` |
+| 2 | first full run: probe `a13-dns-style-hostname` was "INFERRED" denied (curl exit 6, could not resolve) | the host mapping turned a 58-character label into a 70+ character one, which is not a legal DNS label: the sandbox's own resolver refused it before OpenShell saw anything | `os_map_host` truncates the label to 63 characters; `hosts.txt` and `/etc/hosts` regenerated. After the fix every denial is attributed to OpenShell's own log text (0 INFERRED, 0 UNATTRIBUTED in the final run). The verdict (denied) did not change |
+| 3 | `os_policy_*.raw.yaml` (translator output, unedited) cannot start a sandbox | as predicted: `unknown tls value 'terminate'` | none needed; recorded as a result. All three raw policies are refused with the same error |
+
+The full set was run three times (before fix 2, after fix 2, after the final driver tidy-up); the scores were identical every time.
+Gateway journal: no errors; occasional `WARN concurrent modification detected during sandbox reconciliation` while sandboxes were created and deleted, harmless here.
+`write_os_comparison` was also extended to add the Pipelock rows, the DLP-evasion table and a comparability section to `results/comparison-openshell.md`.
+
+### Edit ladder (`bench/openshell/ladder.sh`, output in `results/openshell-evidence/ladder.txt`)
+
+What each harness edit is actually needed for, observed with a one-line curl to a listed and an unlisted host:
+
+| policy | curl to listed host | OpenShell's words |
+|---|---|---|
+| raw minus `tls: terminate` only (port 443, no binaries) | refused (curl 7) | `transparent TCP mapping does not authorize the requested port` [reason:transparent_tcp_mapping_denied] |
+| + port rewritten to the mock's | refused (curl 7) | `binary '/usr/bin/curl' not allowed in policy 'bollard-egress' (ancestors: [], cmdline: []). SYMLINK HINT ...` [reason:transparent_tcp_policy_denied] |
+| + `binaries: [/usr/bin/curl]` (no `allowed_ips`) | 200 | `NET:OPEN ALLOWED ... [policy:bollard-egress engine:opa]`, `HTTP:GET ALLOWED ... engine:l7` |
+
+So the translator needs all three of: drop `tls: terminate`, the right port, a `binaries` list. **`allowed_ips` was not needed**: a full run with `--os-no-allowed-ips` gave scores identical to
+the default (exact declared hosts may reach a private address, as `schema.mdx` says). The default still adds it; it is harmless.
+
+### Deny reasons OpenShell gave (all denials in the run, 17 over the three policies)
+
+- host not in the policy: `NET:REFUSE ... DENIED <host> [reason:policy_dns_ineligible]`, then a supervisor WARN `Denied staged transparent connection destination=198.18.0.N:18080 reason=endpoint <host>:18080 is not allowed by any policy`, then `NET:OPEN ... DENIED /usr/bin/curl(0) -> <host>:18080 [reason:transparent_tcp_policy_denied]`. The client sees only a refused connection (curl exit 7), for http and https alike.
+- listed host, wrong port: `transparent TCP mapping does not authorize the requested port` [reason:transparent_tcp_mapping_denied] (ladder only).
+- listed host, wrong binary: `binary '/usr/bin/curl' not allowed in policy 'bollard-egress' ...` (ladder only).
+- No taint, DLP, content or provenance reason exists. There is no `[policy:...]` name on a denial, because no policy matched.
+
+Allowed plain-http requests are logged with method and URL (`HTTP:POST ALLOWED POST http://<host>:18080/path [policy:bollard-egress engine:l7]`), never the body. Allowed https connections log only `NET:OPEN ALLOWED`
+followed by `NET:FAIL` (the mock is not a TLS server); no L7 line is produced for them.
+
+### Predictions versus measurement
+
+All of "What the run should show" held: no `taint` or `dlp` denials; the allowlist blocks equal Pipelock's allowlist blocks (8 / 1 / 1; Bollard reports 7 / 1 / 1 because it attributes some allowlist-host denials to taint first, e.g. `a01` and `a13` to the unlisted attacker host); every attack to a host in the policy leaked;
+every DLP-evasion payload passed, including the verbatim secret that Bollard and Pipelock block; `browse` and `open` identical. Step-by-step comparison with `bollard-proxy`: in all 3 x 41 egress steps, the only disagreements are steps Bollard denies by taint or DLP and OpenShell allows (8 / 10 / 8 per policy); there is no step OpenShell denies and Bollard allows.
+
+### Known limits of this run
+
+- One mock port (18080) and one binary (`curl`): port, binary and L7 method/path rules were not exercised beyond the ladder. The translator emits `protocol: rest, access: read-write` for every host (all methods) and the run did not probe the REST rules.
+- An https:// step is judged by the TCP connection reaching the mock. Whether OpenShell terminated and re-originated TLS or tunnelled blind cannot be told from that test (the mock sees a ClientHello either way), so nothing here shows whether OpenShell could inspect those bodies; per its own gap report it does not do content DLP.
+- A denial of a listed host (wrong port or binary) is logged against the synthetic address without the host name, so the driver would report it as `UNATTRIBUTED`. It did not occur in the corpus.
+- Only the first policy is run in the `--os-raw` pass; the other two raw policies were refused with the same message when tried by hand.

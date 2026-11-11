@@ -1,0 +1,58 @@
+=== r1
+--- curl http://pypi-org.bench.test:18080/
+curl: (7) Failed to connect to pypi-org.bench.test port 18080 after 5 ms: Couldn't connect to server
+--- curl http://randomblog-example-net.bench.test:18080/
+curl: (7) Failed to connect to randomblog-example-net.bench.test port 18080 after 2 ms: Couldn't connect to server
+--- sandbox NET/HTTP/WARN lines
+[1794431461.122] [sandbox] [INFO ] [openshell_supervisor] Fetching sandbox policy via gRPC endpoint=https://127.0.0.1:17670 sandbox=lad-r1 sandbox_id=951c57f1-ca70-4908-9890-ae7c4a02ea51
+[1794431461.133] [sandbox] [OCSF ] [ocsf] CONFIG:ENRICHED [INFO] Enriched policy with baseline filesystem paths for proxy mode
+[1794431461.162] [sandbox] [OCSF ] [ocsf] NET:LISTEN [INFO] 127.0.0.1:3128
+[1794431461.162] [sandbox] [WARN ] [openshell_supervisor_network::proxy] host.openshell.internal maps to a non-link-local IP; trusted-gateway SSRF exemption disabled ip=127.0.0.1
+[1794431461.194] [sandbox] [OCSF ] [ocsf] CONFIG:LOADED [INFO] Acknowledged initial policy revision as loaded [version:2] [hash:4c4ced1ff907f3a37576d2eba0303105574e33fb89d4e6c44136cb06ad1e1787]
+[1794431461.195] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] 127.0.0.1:17670
+[1794431461.270] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.2:18080 error=transparent destination mapping is unavailable: transparent TCP mapping does not authorize the requested port
+[1794431461.270] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> 198.18.0.2:18080 [reason:transparent_tcp_mapping_denied]
+[1794431461.357] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED randomblog-example-net.bench.test [reason:policy_dns_ineligible]
+[1794431461.358] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name randomblog-example-net.bench.test synthetic=198.18.0.3 for TCP policy review
+[1794431461.359] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.3:18080 reason=endpoint randomblog-example-net.bench.test:18080 is not allowed by any policy
+[1794431461.359] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> randomblog-example-net.bench.test:18080 [reason:transparent_tcp_policy_denied]
+=== r2
+--- curl http://pypi-org.bench.test:18080/
+curl: (7) Failed to connect to pypi-org.bench.test port 18080 after 4 ms: Couldn't connect to server
+--- curl http://randomblog-example-net.bench.test:18080/
+curl: (7) Failed to connect to randomblog-example-net.bench.test port 18080 after 2 ms: Couldn't connect to server
+--- sandbox NET/HTTP/WARN lines
+[1794431465.235] [sandbox] [INFO ] [openshell_supervisor] Fetching sandbox policy via gRPC endpoint=https://127.0.0.1:17670 sandbox=lad-r2 sandbox_id=fc59a763-3f07-40f5-aceb-158ae274f7ef
+[1794431465.248] [sandbox] [OCSF ] [ocsf] CONFIG:ENRICHED [INFO] Enriched policy with baseline filesystem paths for proxy mode
+[1794431465.280] [sandbox] [OCSF ] [ocsf] NET:LISTEN [INFO] 127.0.0.1:3128
+[1794431465.280] [sandbox] [WARN ] [openshell_supervisor_network::proxy] host.openshell.internal maps to a non-link-local IP; trusted-gateway SSRF exemption disabled ip=127.0.0.1
+[1794431465.306] [sandbox] [OCSF ] [ocsf] CONFIG:LOADED [INFO] Acknowledged initial policy revision as loaded [version:2] [hash:2965d826823ac594cc03947bb7e5628c200d967cb41be7aa9583c022ac590831]
+[1794431465.308] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] 127.0.0.1:17670
+[1794431465.390] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.2:18080 reason=binary '/usr/bin/curl' not allowed in policy 'bollard-egress' (ancestors: [], cmdline: []). SYMLINK HINT: the binary path is the kernel-resolved target from /proc/<pid>/exe, not the symlink. If your policy specifies a symlink (e.g., /usr/bin/python3) but the actual binary i
+[1794431465.391] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [reason:transparent_tcp_policy_denied]
+[1794431465.485] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED randomblog-example-net.bench.test [reason:policy_dns_ineligible]
+[1794431465.485] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name randomblog-example-net.bench.test synthetic=198.18.0.3 for TCP policy review
+[1794431465.487] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.3:18080 reason=endpoint randomblog-example-net.bench.test:18080 is not allowed by any policy
+[1794431465.487] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> randomblog-example-net.bench.test:18080 [reason:transparent_tcp_policy_denied]
+=== r3
+--- curl http://pypi-org.bench.test:18080/
+HTTP/1.0 200 OK
+Server: BaseHTTP/0.6 Python/3.12.3
+Date: Wed, 11 Nov 2026 21:11:09 GMT
+Content-Length: 2
+
+ok--- curl http://randomblog-example-net.bench.test:18080/
+curl: (7) Failed to connect to randomblog-example-net.bench.test port 18080 after 1 ms: Couldn't connect to server
+--- sandbox NET/HTTP/WARN lines
+[1794431469.411] [sandbox] [INFO ] [openshell_supervisor] Fetching sandbox policy via gRPC endpoint=https://127.0.0.1:17670 sandbox=lad-r3 sandbox_id=1d3ad48b-4130-4467-bc26-bba25610fd85
+[1794431469.421] [sandbox] [OCSF ] [ocsf] CONFIG:ENRICHED [INFO] Enriched policy with baseline filesystem paths for proxy mode
+[1794431469.451] [sandbox] [OCSF ] [ocsf] NET:LISTEN [INFO] 127.0.0.1:3128
+[1794431469.451] [sandbox] [WARN ] [openshell_supervisor_network::proxy] host.openshell.internal maps to a non-link-local IP; trusted-gateway SSRF exemption disabled ip=127.0.0.1
+[1794431469.483] [sandbox] [OCSF ] [ocsf] CONFIG:LOADED [INFO] Acknowledged initial policy revision as loaded [version:2] [hash:eaa808060e2cdca49b79ec8bc9da1c56e2c598bd295e858a6b418a5ade67a503]
+[1794431469.485] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] 127.0.0.1:17670
+[1794431469.559] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> pypi-org.bench.test:18080 [policy:bollard-egress engine:opa]
+[1794431469.560] [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED GET http://pypi-org.bench.test:18080/ [policy:bollard-egress engine:l7]
+[1794431469.639] [sandbox] [OCSF ] [ocsf] NET:REFUSE [MED] DENIED randomblog-example-net.bench.test [reason:policy_dns_ineligible]
+[1794431469.639] [sandbox] [OCSF ] [ocsf] CONFIG:OBSERVATION [INFO] Policy DNS staged unapproved name randomblog-example-net.bench.test synthetic=198.18.0.3 for TCP policy review
+[1794431469.640] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.3:18080 reason=endpoint randomblog-example-net.bench.test:18080 is not allowed by any policy
+[1794431469.640] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl(0) -> randomblog-example-net.bench.test:18080 [reason:transparent_tcp_policy_denied]
